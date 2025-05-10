@@ -10,8 +10,7 @@
         <ul>
             <li><a href="{{ url_for('main.index') }}">Home</a></li>
             {% if session.get('user_id') %}
-                <li><a href="#">My Groups</a></li>
-                <li><a href="#">Create Group</a></li>
+                <li><a href="{{ url_for('groups.create_group') }}">Create Group</a></li>
                 <li><a href="{{ url_for('auth.logout') }}">Logout ({{ session.get('username') }})</a></li>
             {% else %}
                 <li><a href="{{ url_for('auth.login') }}">Login</a></li>
