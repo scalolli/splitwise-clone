@@ -1,24 +1,33 @@
+import pytest
 from app import create_app, db
 from app.models.user import User
 from app.models.group import Group
 from app.models.expense import Expense
 from app.models.expense_share import ExpenseShare
 from app.models.settlement import Settlement
+from config import Config
 from datetime import datetime
 
-app = create_app()
+class TestConfig(Config):
+    TESTING = True
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
+    WTF_CSRF_ENABLED = False
 
-def create_sample_data():
-    """Create sample data for development."""
+@pytest.fixture
+def app():
+    """Create and configure a Flask app for testing."""
+    app = create_app(TestConfig)
+    return app
+
+@pytest.fixture
+def test_data(app):
+    """Create test data in the database."""
     with app.app_context():
-        # Check if we already have data
-        if User.query.count() > 0:
-            print("Sample data already exists. Skipping creation.")
-            return
+        # Create all tables in the test database
+        db.create_all()
         
-        print("Creating sample data...")
-        
-        # Create users with hashed passwords
+        # Create test data
+        # Users
         user1 = User(username='user1', email='user1@example.com')
         user1.set_password('password')
         
@@ -32,7 +41,7 @@ def create_sample_data():
         db.session.add_all([user1, user2, user3])
         db.session.flush()
         
-        # Create groups
+        # Groups
         group1 = Group(name='Apartment', description='Apartment expenses', created_at=datetime.utcnow())
         group1.created_by_id = user1.id
         group1.members.append(user1)
@@ -48,7 +57,7 @@ def create_sample_data():
         db.session.add_all([group1, group2])
         db.session.flush()
         
-        # Create expenses
+        # Expenses
         expense1 = Expense(
             description='Groceries', 
             amount=100.0, 
@@ -77,7 +86,7 @@ def create_sample_data():
         db.session.add_all([expense1, expense2, expense3])
         db.session.flush()
         
-        # Create expense shares
+        # Expense Shares
         # Groceries split equally between user1 and user2
         share1 = ExpenseShare(expense_id=expense1.id, user_id=user1.id, amount=50.0)
         share2 = ExpenseShare(expense_id=expense1.id, user_id=user2.id, amount=50.0)
@@ -98,24 +107,33 @@ def create_sample_data():
         
         # Commit all changes
         db.session.commit()
-        print("Sample data created successfully!")
+        
+        # Store references to test data for tests to use
+        test_data = {
+            'users': {
+                'user1': user1,
+                'user2': user2,
+                'user3': user3
+            },
+            'groups': {
+                'apartment': group1,
+                'trip': group2
+            },
+            'expenses': {
+                'groceries': expense1,
+                'rent': expense2,
+                'hotel': expense3
+            }
+        }
+        
+        yield test_data
+        
+        # Clean up
+        db.session.remove()
+        db.drop_all()
 
-@app.shell_context_processor
-def make_shell_context():
-    return {
-        'db': db, 
-        'User': User, 
-        'Group': Group, 
-        'Expense': Expense, 
-        'ExpenseShare': ExpenseShare, 
-        'Settlement': Settlement,
-        'create_sample_data': create_sample_data
-    }
-
-if __name__ == '__main__':
-    # Create sample data when running the app
-    with app.app_context():
-        db.create_all()  # Make sure tables exist
-        create_sample_data()
-    
-    app.run(debug=True)
+@pytest.fixture
+def client(app, test_data):
+    """Create a test client for the app."""
+    with app.test_client() as client:
+        yield client

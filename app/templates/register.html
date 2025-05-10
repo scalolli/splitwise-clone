@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 
-{% block title %}Login - Splitwise Clone{% endblock %}
+{% block title %}Register - Splitwise Clone{% endblock %}
 
 {% block content %}
     <div class="login-container">
-        <h1>Login</h1>
+        <h1>Create Account</h1>
         
         {% if error %}
         <div class="error">{{ error }}</div>
@@ -16,14 +16,22 @@
                 <input type="text" id="username" name="username" required>
             </div>
             <div>
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email" required>
+            </div>
+            <div>
                 <label for="password">Password:</label>
                 <input type="password" id="password" name="password" required>
             </div>
             <div>
-                <button type="submit">Login</button>
+                <label for="confirm_password">Confirm Password:</label>
+                <input type="password" id="confirm_password" name="confirm_password" required>
+            </div>
+            <div>
+                <button type="submit">Register</button>
             </div>
         </form>
         
-        <p>Don't have an account? <a href="{{ url_for('auth.register') }}">Sign up</a></p>
+        <p>Already have an account? <a href="{{ url_for('auth.login') }}">Log in</a></p>
     </div>
 {% endblock %}

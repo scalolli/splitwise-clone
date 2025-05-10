@@ -1,18 +1,9 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Home - Splitwise Clone</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
-<body>
+{% extends "base.html" %}
+
+{% block title %}Home - Splitwise Clone{% endblock %}
+
+{% block content %}
     <h1>Splitwise Clone</h1>
-    
-    <nav>
-        <ul>
-            <li><a href="{{ url_for('main.index') }}">Home</a></li>
-            <li><a href="{{ url_for('auth.login') }}">Login</a></li>
-        </ul>
-    </nav>
     
     <h2>Users</h2>
     <table>
@@ -43,5 +34,4 @@
         </tr>
         {% endfor %}
     </table>
-</body>
-</html>
+{% endblock %}
