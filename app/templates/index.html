@@ -49,7 +49,7 @@
         {% if groups %}
             {% for group in groups %}
                 <div class="item">
-                    <h3><a href="{{ url_for('view_group', group_id=group.id) }}">{{ group.name }}</a></h3>
+                    <h3><a href="{{ url_for('groups.group', group_id=group.id) }}">{{ group.name }}</a></h3>
                     <p>{{ group.description }}</p>
                     <p><strong>Members:</strong> 
                         {% for member in group.members %}
@@ -62,6 +62,6 @@
             <p>No groups found.</p>
         {% endif %}
     </div>
-    <a href="{{ url_for('login') }}" class="btn btn-primary">Login</a>
+    <a href="{{ url_for('auth.login') }}" class="btn btn-primary">Login</a>
 </body>
 </html>

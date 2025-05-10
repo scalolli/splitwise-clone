@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Group Details - Splitwise Clone</title>
+</head>
+<body>
+    <h1>{{ group.name }}</h1>
+    <p>{{ group.description }}</p>
+    
+    <h2>Members</h2>
+    <ul>
+        {% for member in group.members %}
+        <li>{{ member.username }}</li>
+        {% endfor %}
+    </ul>
+    
+    <h2>Expenses</h2>
+    <table border="1">
+        <tr>
+            <th>Description</th>
+            <th>Amount</th>
+            <th>Paid By</th>
+            <th>Date</th>
+        </tr>
+        {% for expense in group.expenses %}
+        <tr>
+            <td>{{ expense.description }}</td>
+            <td>{{ expense.amount }}</td>
+            <td>{{ expense.payer.username }}</td>
+            <td>{{ expense.date.strftime('%Y-%m-%d') }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    
+    <p><a href="{{ url_for('main.index') }}">Back to Home</a></p>
+</body>
+</html>
