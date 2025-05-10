@@ -12,7 +12,7 @@ class Expense(db.Model):
     # Relationships
     payer = db.relationship('User', back_populates='expenses_paid')
     group = db.relationship('Group', back_populates='expenses')
-    shares = db.relationship('ExpenseShare', back_populates='expense')
+    shares = db.relationship('ExpenseShare', back_populates='expense', cascade="all, delete-orphan")
     
     def __repr__(self):
         return f'<Expense {self.description} ${self.amount}>'
