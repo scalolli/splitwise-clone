@@ -135,5 +135,24 @@ def index():
     groups = Group.query.all()
     return render_template('index.html', users=users, groups=groups)
 
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    error = None
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        
+        # Simple validation - just check if user exists
+        user = User.query.filter_by(username=username).first()
+        
+        if user:
+            # For now, just redirect to home page
+            # We'll implement proper password checking later
+            return redirect(url_for('index'))
+        else:
+            error = "Invalid username or password"
+    
+    return render_template('login.html', error=error)
+
 if __name__ == '__main__':
     app.run(debug=True)
