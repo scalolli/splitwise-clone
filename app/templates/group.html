@@ -3,55 +3,47 @@
 {% block title %}{{ group.name }} - Splitwise Clone{% endblock %}
 
 {% block content %}
+<div class="container">
     <h1>{{ group.name }}</h1>
     <p>{{ group.description }}</p>
     
     <h2>Members</h2>
     <ul>
         {% for member in group.members %}
-        <li>
-            {{ member.username }}
-            {% if session.get('user_id') == group.created_by_id and member.id != group.created_by_id %}
-                <form method="post" action="{{ url_for('groups.remove_member', group_id=group.id, user_id=member.id) }}" style="display: inline;">
-                    <button type="submit" class="btn-small">Remove</button>
-                </form>
-            {% endif %}
-        </li>
+        <li>{{ member.username }}</li>
         {% endfor %}
     </ul>
     
-    {% if session.get('user_id') == group.created_by_id %}
-    <div class="add-member-form">
-        <h3>Add Member</h3>
-        <form method="post" action="{{ url_for('groups.add_member', group_id=group.id) }}">
-            <div>
-                <label for="username">Username:</label>
-                <input type="text" id="username" name="username" required>
-            </div>
-            <div>
-                <button type="submit">Add Member</button>
-            </div>
-        </form>
+    <h2>Expenses</h2>
+    {% if session.get('user_id') %}
+    <div class="actions">
+        <a href="{{ url_for('expenses.add_expense', group_id=group.id) }}" class="btn">Add Expense</a>
     </div>
     {% endif %}
     
-    <h2>Expenses</h2>
+    {% if group.expenses %}
     <table>
-        <tr>
-            <th>Description</th>
-            <th>Amount</th>
-            <th>Paid By</th>
-            <th>Date</th>
-        </tr>
-        {% for expense in group.expenses %}
-        <tr>
-            <td>{{ expense.description }}</td>
-            <td>${{ expense.amount }}</td>
-            <td>{{ expense.payer.username }}</td>
-            <td>{{ expense.date.strftime('%Y-%m-%d') }}</td>
-        </tr>
-        {% endfor %}
+        <thead>
+            <tr>
+                <th>Description</th>
+                <th>Amount</th>
+                <th>Paid By</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for expense in group.expenses %}
+            <tr>
+                <td>{{ expense.description }}</td>
+                <td>${{ expense.amount }}</td>
+                <td>{{ expense.payer.username }}</td>
+                <td>{{ expense.date.strftime('%Y-%m-%d') }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
     </table>
-    
-    <p><a href="{{ url_for('main.index') }}">Back to Home</a></p>
+    {% else %}
+    <p>No expenses yet.</p>
+    {% endif %}
+</div>
 {% endblock %}
