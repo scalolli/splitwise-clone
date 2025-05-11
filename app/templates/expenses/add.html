@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Add Expense - Splitwise Clone{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Add New Expense</h1>
+    <h2>Group: {{ group.name }}</h2>
+    
+    <form method="post">
+        <div>
+            <label for="description">Description:</label>
+            <input type="text" id="description" name="description" required>
+        </div>
+        
+        <div>
+            <label for="amount">Amount:</label>
+            <input type="number" id="amount" name="amount" step="0.01" min="0.01" required>
+        </div>
+        
+        <div>
+            <button type="submit">Add Expense</button>
+            <a href="{{ url_for('groups.group', group_id=group.id) }}">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
