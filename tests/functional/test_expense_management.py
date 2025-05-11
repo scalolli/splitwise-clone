@@ -43,3 +43,74 @@ def test_add_expense_button_on_group_page(client):
     
     # Check that the Add Expense button is present
     assert b'Add Expense' in response.data
+
+def test_add_expense_page_loads(client):
+    """Test that the add expense page loads correctly."""
+    # Log in the user
+    with client.session_transaction() as session:
+        session['user_id'] = 1
+    
+    # Access the add expense page
+    response = client.get('/group/1/add_expense')
+    
+    # Check that the page loads correctly
+    assert response.status_code == 200
+    assert b'Add New Expense' in response.data
+    assert b'Description:' in response.data
+    assert b'Amount:' in response.data
+
+from app.models.expense import Expense
+
+def test_submit_add_expense_form(client):
+    """Test that submitting the add expense form creates a new expense."""
+    # Log in the user
+    with client.session_transaction() as session:
+        session['user_id'] = 1
+    
+    # Submit the add expense form
+    response = client.post('/group/1/add_expense', data={
+        'description': 'Test Expense',
+        'amount': '50.00'
+    }, follow_redirects=True)
+    
+    # Check that the form submission was successful
+    assert response.status_code == 200
+    assert b'Expense added successfully' in response.data
+    
+    # Check that the expense was created in the database
+    with client.application.app_context():
+        expense = Expense.query.filter_by(description='Test Expense').first()
+        assert expense is not None
+        assert expense.amount == 50.00
+        assert expense.payer_id == 1
+        assert expense.group_id == 1
+
+from app.models.expense_share import ExpenseShare
+
+def test_expense_shares_creation(client):
+    """Test that expense shares are created when an expense is added."""
+    # Log in the user
+    with client.session_transaction() as session:
+        session['user_id'] = 1
+    
+    # Submit the add expense form
+    client.post('/group/1/add_expense', data={
+        'description': 'Shared Expense',
+        'amount': '100.00'
+    })
+    
+    # Check that expense shares were created
+    with client.application.app_context():
+        expense = Expense.query.filter_by(description='Shared Expense').first()
+        shares = ExpenseShare.query.filter_by(expense_id=expense.id).all()
+        
+        # There should be one share for each group member (2 in this case)
+        assert len(shares) == 2
+        
+        # The total of all shares should equal the expense amount
+        total_shares = sum(share.amount for share in shares)
+        assert total_shares == 100.00
+        
+        # Each share should be equal (for equal splitting)
+        assert shares[0].amount == 50.00
+        assert shares[1].amount == 50.00

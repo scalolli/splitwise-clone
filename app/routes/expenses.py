@@ -2,7 +2,6 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from app.models.expense import Expense
 from app.models.expense_share import ExpenseShare
 from app.models.group import Group
-from app.models.user import User
 from app import db
 from datetime import datetime
 
@@ -28,9 +27,6 @@ def add_expense(group_id):
         
         try:
             amount = float(amount_str)
-            if amount <= 0:
-                flash('Amount must be positive', 'error')
-                return render_template('expenses/add.html', group=group)
         except ValueError:
             flash('Amount must be a valid number', 'error')
             return render_template('expenses/add.html', group=group)
@@ -44,7 +40,7 @@ def add_expense(group_id):
             group_id=group_id
         )
         db.session.add(expense)
-        db.session.flush()  # Get the expense ID
+        db.session.flush()  # Get the expense ID before committing
         
         # Create equal expense shares
         member_count = len(group.members)
@@ -59,6 +55,7 @@ def add_expense(group_id):
             db.session.add(share)
         
         db.session.commit()
+        
         flash('Expense added successfully', 'success')
         return redirect(url_for('groups.group', group_id=group_id))
     

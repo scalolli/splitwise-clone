@@ -14,11 +14,11 @@ def create_app(config_class=Config):
     from app.routes.main import main_bp
     from app.routes.auth import auth_bp
     from app.routes.groups import groups_bp
-    from app.routes.expenses import expenses_bp  # Import the expenses blueprint
+    from app.routes.expenses import expenses_bp
     
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(groups_bp)
-    app.register_blueprint(expenses_bp)  # Register the expenses blueprint
+    app.register_blueprint(expenses_bp)
     
     return app
