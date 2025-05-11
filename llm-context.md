@@ -3,13 +3,6 @@
 ## Project Overview
 We're building a Splitwise clone using Flask and SQLAlchemy. The application allows users to track shared expenses within groups and calculate who owes whom.
 
-## Development Approach
-We're following Test-Driven Development (TDD) principles:
-1. Write tests first to define expected behavior
-2. Implement the minimum code needed to make tests pass
-3. Refactor code while maintaining test coverage
-4. Repeat for each new feature
-
 ## Current Implementation
 
 ### Technology Stack
@@ -17,11 +10,10 @@ We're following Test-Driven Development (TDD) principles:
 - SQLAlchemy 1.4.46
 - Flask-SQLAlchemy 2.5.1
 - SQLite database
-- Pytest for testing
 
 ### Database Models
 1. **User**: Represents application users
-   - Fields: id, username, email, password (hashed)
+   - Fields: id, username, email, password
    - Relationships: groups, expenses_paid
 
 2. **Group**: Represents expense sharing groups
@@ -41,48 +33,49 @@ We're following Test-Driven Development (TDD) principles:
    - Relationships: payer, receiver, group
 
 ### Implemented Features
-1. Complete Flask application setup with SQLAlchemy
+1. Basic Flask application setup with SQLAlchemy
 2. Database models for all entities
-3. User authentication (registration, login, logout)
-4. Group creation and management
-5. Group member management (add/remove members)
-6. Home page showing users and groups
-7. Group detail page showing members and expenses
-8. Comprehensive test suite following TDD principles
+3. Sample data generation for testing
+4. Home page showing users and groups
+5. Group detail page showing members and expenses
+6. "Add Expense" button on group page
+7. "Add Expense" page with form (without submission handling yet)
 
 ### Project Structure
-- app/
-  - __init__.py: Application factory
-  - models/: Database models
-  - routes/: Route handlers
-  - static/: CSS and other static files
-  - templates/: HTML templates
-- tests/
-  - unit/: Unit tests for models
-  - functional/: Functional tests for routes
-  - conftest.py: Test fixtures
-- config.py: Application configuration
-- run.py: Application entry point
+- app.py: Main application file with routes and models
+- templates/index.html: Home page template
+- templates/group.html: Group detail page template
+- templates/expenses/add.html: Add expense form template
+- requirements.txt: Dependencies
+- README.md: Project documentation
+
+## Development Approach
+We are following strict Test-Driven Development (TDD):
+1. Write a failing test for a small piece of functionality
+2. Implement the minimal code needed to make the test pass
+3. Refactor if necessary
+4. Repeat for the next small piece of functionality
+
+## Current Progress
+1. Implemented "Add Expense" button on group page (Step 1)
+2. Implemented "Add Expense" page with route and template (Step 2)
 
 ## Next Steps
-Features to implement next:
-1. Expense creation and management (in progress)
-2. Balance calculations
-3. Settlement tracking
-4. User dashboard
-5. Improved UI/UX
+1. Implement form submission handling for adding expenses (Step 3)
+2. Implement expense shares creation (Step 4)
+3. Implement expense listing on group page (Step 5)
+4. Implement expense editing (Step 6)
+5. Implement expense deletion (Step 7)
 
 ## Development History
 1. Initial commit: Basic Flask app with SQLAlchemy integration
-2. Added models, views, and sample data generation
+2. Second commit: Added models, views, and sample data generation
 3. Added README.md
-4. Implemented authentication system
-5. Refactored tests into a more maintainable structure
-6. Implemented group creation and member management
+4. Step 1: Add "Add Expense" button to group page
+5. Step 2: Implement "Add Expense" page with route and template
 
 ## GitHub Repository
 The project is hosted on GitHub and includes:
 - Source code
 - README with setup instructions
 - Requirements file
-- Comprehensive test suite
