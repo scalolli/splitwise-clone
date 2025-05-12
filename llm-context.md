@@ -39,7 +39,10 @@ We're building a Splitwise clone using Flask and SQLAlchemy. The application all
 4. Home page showing users and groups
 5. Group detail page showing members and expenses
 6. "Add Expense" button on group page
-7. "Add Expense" page with form (without submission handling yet)
+7. "Add Expense" page with form
+8. Form submission handling for adding expenses
+9. Equal expense splitting
+10. Custom expense splitting
 
 ### Project Structure
 - app.py: Main application file with routes and models
@@ -59,13 +62,54 @@ We are following strict Test-Driven Development (TDD):
 ## Current Progress
 1. Implemented "Add Expense" button on group page (Step 1)
 2. Implemented "Add Expense" page with route and template (Step 2)
+3. Implemented form submission handling for adding expenses with equal expense shares (Step 3)
+4. Implemented flexible expense splitting with custom split option (Step 4)
 
-## Next Steps
-1. Implement form submission handling for adding expenses (Step 3)
-2. Implement expense shares creation (Step 4)
-3. Implement expense listing on group page (Step 5)
-4. Implement expense editing (Step 6)
-5. Implement expense deletion (Step 7)
+## Pending Functionality
+Here are the remaining features to implement, in recommended order:
+
+### Step 5: Implement Balance Calculation
+1. Write tests for balance calculation
+2. Implement a method to calculate balances between group members
+3. Display these balances on the group page
+4. Show who owes whom and how much
+
+### Step 6: Implement Expense Editing
+1. Write tests for the edit expense functionality
+2. Create an edit expense page and route
+3. Implement the form submission handling for updating expenses
+4. Update expense shares when an expense is edited
+
+### Step 7: Implement Expense Deletion
+1. Write tests for expense deletion
+2. Add a delete button/form to the group page
+3. Implement the route to handle expense deletion
+4. Ensure expense shares are deleted when an expense is deleted
+
+### Step 8: Implement Settlements
+1. Write tests for recording settlements
+2. Create a settlement form
+3. Implement the route to handle settlement creation
+4. Update balance calculations to account for settlements
+
+### Step 9: Implement User Authentication Enhancements
+1. Implement password reset functionality
+2. Add email verification
+3. Implement "remember me" functionality
+4. Add profile management
+
+### Step 10: Improve UI/UX
+1. Add proper styling with CSS
+2. Implement responsive design
+3. Add confirmation dialogs for important actions
+4. Improve form validation and error messages
+
+### Step 11: Add Advanced Features
+1. Implement expense categories and tags
+2. Add expense filtering and sorting
+3. Implement expense recurring functionality
+4. Add expense attachments (receipts, etc.)
+5. Implement expense comments
 
 ## Development History
 1. Initial commit: Basic Flask app with SQLAlchemy integration
@@ -73,6 +117,8 @@ We are following strict Test-Driven Development (TDD):
 3. Added README.md
 4. Step 1: Add "Add Expense" button to group page
 5. Step 2: Implement "Add Expense" page with route and template
+6. Step 3: Implement form submission handling for adding expenses with equal expense shares
+7. Step 4: Implement flexible expense splitting with custom split option
 
 ## GitHub Repository
 The project is hosted on GitHub and includes:
