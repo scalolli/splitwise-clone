@@ -137,3 +137,16 @@ def client(app, test_data):
     """Create a test client for the app."""
     with app.test_client() as client:
         yield client
+
+@pytest.fixture
+def db_session(app):
+    """Create a test database session."""    
+    # Create the database and tables
+    with app.app_context():
+        db.create_all()
+        
+        yield db.session
+        
+        # Clean up
+        db.session.remove()
+        db.drop_all()        
