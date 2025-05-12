@@ -27,6 +27,9 @@ def add_expense(group_id):
         
         try:
             amount = float(amount_str)
+            if amount <= 0:
+                flash('Amount must be positive', 'error')
+                return render_template('expenses/add.html', group=group)
         except ValueError:
             flash('Amount must be a valid number', 'error')
             return render_template('expenses/add.html', group=group)
