@@ -1,37 +1,30 @@
-import unittest
+import pytest
 from datetime import datetime
-from app.models.user import User
-from app.models.group import Group
-from app.models.settlement import Settlement
+from app import db
 from app.services.settlement_service import record_settlement
 
-class TestSettlementService(unittest.TestCase):
-    def setUp(self):
-        # Create test users
-        self.user1 = User(id=1, username="user1")
-        self.user2 = User(id=2, username="user2")
-        
-        # Create test group
-        self.group = Group(
-            id=1,
-            name="Test Group",
-            members=[self.user1, self.user2]
-        )
 
-    def test_record_simple_settlement(self):
-        # Test recording a simple payment between two users
+def test_record_valid_settlement(app, test_data):
+    """Test recording a valid settlement between two users in a group"""
+    with app.app_context():
+        # Get test users and group from test_data
+        user1 = test_data['users']['user1']
+        user2 = test_data['users']['user2']
+        group = test_data['groups']['apartment']
+        
+        # Record settlement using db instance
         settlement = record_settlement(
-            payer_id=1,
-            receiver_id=2,
+            db=db,  # Use the db instance instead of app.db
+            payer_id=user1.id,
+            receiver_id=user2.id,
             amount=50.00,
-            group_id=1,
+            group_id=group.id,
             date=datetime(2024, 1, 1)
         )
 
         # Verify settlement was recorded correctly
-        self.assertIsInstance(settlement, Settlement)
-        self.assertEqual(settlement.payer_id, 1)
-        self.assertEqual(settlement.receiver_id, 2)
-        self.assertEqual(settlement.amount, 50.00)
-        self.assertEqual(settlement.group_id, 1)
-        self.assertEqual(settlement.date, datetime(2024, 1, 1))
+        assert settlement.payer_id == user1.id
+        assert settlement.receiver_id == user2.id
+        assert settlement.amount == 50.00
+        assert settlement.group_id == group.id
+        assert settlement.date == datetime(2024, 1, 1)
