@@ -3,13 +3,37 @@ from app.models.group import Group
 from app.models.user import User
 from app import db
 from datetime import datetime
+from app.services.balance_service import calculate_balances
 
 groups_bp = Blueprint('groups', __name__)
 
 @groups_bp.route('/group/<int:group_id>')
 def group(group_id):
+    # Check if user is logged in
+    if 'user_id' not in session:
+        flash('Please log in to access this page', 'error')
+        return redirect(url_for('auth.login'))
+    
     group = Group.query.get_or_404(group_id)
-    return render_template('group.html', group=group)
+    
+    # Calculate balances for the group
+    balances = calculate_balances(group_id)
+    
+    # Get user information for displaying balances
+    user_ids = set()
+    for balance in balances:
+        user_ids.add(balance['from_user_id'])
+        user_ids.add(balance['to_user_id'])
+    
+    users = User.query.filter(User.id.in_(user_ids)).all()
+    user_map = {user.id: user for user in users}
+    
+    # Add user objects to balances for easy access in template
+    for balance in balances:
+        balance['from_user'] = user_map.get(balance['from_user_id'])
+        balance['to_user'] = user_map.get(balance['to_user_id'])
+    
+    return render_template('group.html', group=group, balances=balances)
 
 @groups_bp.route('/group/create', methods=['GET', 'POST'])
 def create_group():

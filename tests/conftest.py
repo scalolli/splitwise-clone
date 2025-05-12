@@ -149,4 +149,4 @@ def db_session(app):
         
         # Clean up
         db.session.remove()
-        db.drop_all()        
+        db.drop_all()      

@@ -14,6 +14,22 @@
         {% endfor %}
     </ul>
     
+    <h2>Balances</h2>
+    {% if balances %}
+    <ul class="balances">
+        {% for balance in balances %}
+        <li class="balance-item">
+            <span class="user">{{ balance.from_user.username }}</span> 
+            owes 
+            <span class="user">{{ balance.to_user.username }}</span> 
+            <span class="amount">${{ balance.amount|round(2) }}</span>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p>Everyone is settled up! No balances to display.</p>
+    {% endif %}
+    
     <h2>Expenses</h2>
     {% if session.get('user_id') %}
     <div class="actions">

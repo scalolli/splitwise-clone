@@ -13,6 +13,13 @@ def test_index_page_loads(client):
 
 def test_group_detail_page_loads(client, test_data):
     """Test that the group detail page loads correctly"""
+    # Log in the user
+    # First login as user1 (who created the apartment group)
+    client.post('/login', data={
+        'username': 'user1',
+        'password': 'password'
+    })
+
     group_id = test_data['groups']['apartment'].id
     response = client.get(f'/group/{group_id}')
     assert response.status_code == 200
@@ -27,6 +34,13 @@ def test_group_detail_page_loads(client, test_data):
 
 def test_group_detail_shows_expenses(client, test_data):
     """Test that the group detail page shows expenses correctly"""
+    # Log in the user
+    # First login as user1 (who created the apartment group)
+    client.post('/login', data={
+        'username': 'user1',
+        'password': 'password'
+    })
+
     group_id = test_data['groups']['apartment'].id
     response = client.get(f'/group/{group_id}')
     assert response.status_code == 200
@@ -35,7 +49,13 @@ def test_group_detail_shows_expenses(client, test_data):
     assert b'Rent' in response.data
     assert b'1000.0' in response.data
 
-def test_nonexistent_group(client):
+def test_nonexistent_group(client, test_data):
     """Test accessing a group that doesn't exist"""
+    # Log in the user
+    # First login as user1 (who created the apartment group)
+    client.post('/login', data={
+        'username': 'user1',
+        'password': 'password'
+    })
     response = client.get('/group/999')
     assert response.status_code == 404
