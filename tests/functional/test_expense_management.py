@@ -114,3 +114,40 @@ def test_expense_shares_creation(client):
         # Each share should be equal (for equal splitting)
         assert shares[0].amount == 50.00
         assert shares[1].amount == 50.00
+
+def test_add_expense_with_custom_split(client):
+    """Test adding an expense with custom split amounts."""
+    # Log in the user
+    with client.session_transaction() as session:
+        session['user_id'] = 1
+    
+    # Submit the add expense form with custom split
+    response = client.post('/group/1/add_expense', data={
+        'description': 'Custom Split Expense',
+        'amount': '100.00',
+        'split_type': 'custom',
+        'split_amounts[1]': '70.00',  # User 1 pays 70%
+        'split_amounts[2]': '30.00'   # User 2 pays 30%
+    }, follow_redirects=True)
+    
+    # Check that the form submission was successful
+    assert response.status_code == 200
+    assert b'Expense added successfully' in response.data
+    
+    # Check that the expense was created with correct shares
+    with client.application.app_context():
+        expense = Expense.query.filter_by(description='Custom Split Expense').first()
+        assert expense is not None
+        assert expense.amount == 100.00
+        
+        shares = ExpenseShare.query.filter_by(expense_id=expense.id).all()
+        assert len(shares) == 2
+        
+        # Find shares by user_id
+        user1_share = next((s for s in shares if s.user_id == 1), None)
+        user2_share = next((s for s in shares if s.user_id == 2), None)
+        
+        assert user1_share is not None
+        assert user2_share is not None
+        assert user1_share.amount == 70.00
+        assert user2_share.amount == 30.00
