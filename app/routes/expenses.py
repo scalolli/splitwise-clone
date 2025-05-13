@@ -4,6 +4,7 @@ from app.models.expense_share import ExpenseShare
 from app.models.group import Group
 from app import db
 from datetime import datetime
+from app.forms.edit_expense_form import EditExpenseForm
 
 expenses_bp = Blueprint('expenses', __name__)
 
@@ -106,3 +107,47 @@ def add_expense(group_id):
         return redirect(url_for('groups.group', group_id=group_id))
     
     return render_template('expenses/add.html', group=group)
+
+@expenses_bp.route('/expenses/<int:expense_id>/edit', methods=['GET', 'POST'])
+def edit_expense(expense_id):
+    expense = Expense.query.get_or_404(expense_id)
+    form = EditExpenseForm()
+
+    # Populate choices for SelectFields
+    form.payer_id.choices = [(user.id, user.username) for user in expense.group.members]
+    for split_form in form.splits:
+        split_form.user_id.choices = [(user.id, user.username) for user in expense.group.members]
+
+    # Populate form with existing data on GET request
+    if request.method == 'GET':
+        form.description.data = expense.description
+        form.amount.data = expense.amount
+        form.date.data = expense.date
+        form.payer_id.data = expense.payer_id
+        form.splits.entries = [
+            {'user_id': share.user_id, 'amount': share.amount}
+            for share in expense.shares
+        ]
+
+    if form.validate_on_submit():
+        # Update expense details
+        expense.description = form.description.data
+        expense.amount = form.amount.data
+        expense.date = form.date.data
+        expense.payer_id = form.payer_id.data
+
+        # Update expense splits
+        ExpenseShare.query.filter_by(expense_id=expense.id).delete()
+        for split in form.splits.data:
+            new_share = ExpenseShare(
+                expense_id=expense.id,
+                user_id=split['user_id'],
+                amount=split['amount']
+            )
+            db.session.add(new_share)
+
+        db.session.commit()
+        flash('Expense updated successfully!', 'success')
+        return redirect(url_for('groups.group', group_id=expense.group_id))
+
+    return render_template('expenses/edit.html', form=form, expense=expense)

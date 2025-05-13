@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Edit Expense</h2>
+<form method="POST">
+    {{ form.hidden_tag() }}
+
+    <div class="form-group">
+        {{ form.description.label }}
+        {{ form.description(class="form-control") }}
+    </div>
+
+    <div class="form-group">
+        {{ form.amount.label }}
+        {{ form.amount(class="form-control") }}
+    </div>
+
+    <div class="form-group">
+        {{ form.date.label }}
+        {{ form.date(class="form-control") }}
+    </div>
+
+    <div class="form-group">
+        {{ form.payer_id.label }}
+        {{ form.payer_id(class="form-control") }}
+    </div>
+
+    <h3>Splits</h3>
+    <div id="splits">
+        {% for split in form.splits %}
+        <div class="form-group">
+            {{ split.user_id.label }}
+            {{ split.user_id(class="form-control") }}
+
+            {{ split.amount.label }}
+            {{ split.amount(class="form-control") }}
+        </div>
+        {% endfor %}
+    </div>
+
+    <button type="submit" class="btn btn-primary">Save Changes</button>
+</form>
+{% endblock %}

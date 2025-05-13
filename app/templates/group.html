@@ -45,6 +45,7 @@
                 <th>Amount</th>
                 <th>Paid By</th>
                 <th>Date</th>
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -54,6 +55,9 @@
                 <td>${{ expense.amount }}</td>
                 <td>{{ expense.payer.username }}</td>
                 <td>{{ expense.date.strftime('%Y-%m-%d') }}</td>
+                <td>
+                    <a href="{{ url_for('expenses.edit_expense', expense_id=expense.id) }}" class="btn btn-warning btn-sm">Edit</a>
+                </td>
             </tr>
             {% endfor %}
         </tbody>

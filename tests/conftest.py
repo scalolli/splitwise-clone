@@ -11,8 +11,9 @@ class TestConfig(Config):
     TESTING = True
     SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
     WTF_CSRF_ENABLED = False
+    SERVER_NAME = 'localhost.localdomain'
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def app():
     """Create and configure a Flask app for testing."""
     app = create_app(TestConfig)
@@ -148,4 +149,13 @@ def db_session(app):
         
         # Clean up
         db.session.remove()
-        db.drop_all()      
+        db.drop_all()
+
+@pytest.fixture(scope='session')
+def test_db(app):
+    """Provide a database session for tests."""
+    with app.app_context():
+        db.create_all()
+        yield db
+        db.session.remove()
+        db.drop_all()
