@@ -2,3 +2,5 @@ Flask==2.0.1
 SQLAlchemy==1.4.46
 Flask-SQLAlchemy==2.5.1
 pytest==7.4.0
+Werkzeug<2.1
+Flask-WTF==1.0.1
