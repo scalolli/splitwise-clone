@@ -124,10 +124,13 @@ def edit_expense(expense_id):
         form.amount.data = expense.amount
         form.date.data = expense.date
         form.payer_id.data = expense.payer_id
-        form.splits.entries = [
-            {'user_id': share.user_id, 'amount': share.amount}
-            for share in expense.shares
-        ]
+        
+        # Correctly populate form.splits.entries with FormField instances
+        form.splits.entries = []
+        for share in expense.shares:
+            split_form = form.splits.append_entry()
+            split_form.user_id.data = share.user_id
+            split_form.amount.data = share.amount
 
     if form.validate_on_submit():
         # Update expense details
