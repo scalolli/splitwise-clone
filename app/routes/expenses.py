@@ -110,11 +110,13 @@ def add_expense(group_id):
 
 @expenses_bp.route('/expenses/<int:expense_id>/edit', methods=['GET', 'POST'])
 def edit_expense(expense_id):
-    expense = Expense.query.get_or_404(expense_id)
+    # Eagerly load the group and its members
+    expense = Expense.query.options(db.joinedload(Expense.group).joinedload(Group.members)).get_or_404(expense_id)
     form = EditExpenseForm()
 
     # Populate choices for SelectFields
     form.payer_id.choices = [(user.id, user.username) for user in expense.group.members]
+    # Populate choices for user_id in each split form
     for split_form in form.splits:
         split_form.user_id.choices = [(user.id, user.username) for user in expense.group.members]
 
@@ -131,6 +133,7 @@ def edit_expense(expense_id):
             split_form = form.splits.append_entry()
             split_form.user_id.data = share.user_id
             split_form.amount.data = share.amount
+            split_form.user_id.choices = [(user.id, user.username) for user in expense.group.members]
 
     if form.validate_on_submit():
         # Update expense details

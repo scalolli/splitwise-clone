@@ -33,3 +33,28 @@ def test_edit_expense_post(client, sample_expense, test_db):
     assert updated_expense.amount == 150
     assert len(updated_expense.shares) == 1
     assert updated_expense.shares[0].amount == 150
+
+def test_render_shared_expenses(client, sample_expense, test_db):
+    """Test if shared expenses are rendered properly on the edit expense page."""
+    # Add shared expenses for the sample expense
+    share1 = ExpenseShare(expense_id=sample_expense.id, user_id=1, amount=50)
+    share2 = ExpenseShare(expense_id=sample_expense.id, user_id=2, amount=50)
+    test_db.session.add_all([share1, share2])
+    test_db.session.commit()
+
+    # Navigate to the edit expense page
+    response = client.get(url_for('expenses.edit_expense', expense_id=sample_expense.id))
+    assert response.status_code == 200
+
+    # print("printing the response******** {}".format(response.data))  # Debugging line to check the response data
+
+    # Check if the shared expenses are rendered properly
+    assert b"user_id" in response.data  # Check if user field is rendered
+    assert b"50" in response.data       # Check if the amount is rendered
+    assert b"user1" in response.data    # Check if 'user1' is present in the dropdown options
+    assert b"user2" in response.data    # Check if 'user2' is present in the dropdown options
+    assert b"<option value=\"1\">user1</option>" in response.data  # Check if 'user1' is present in the dropdown options
+
+    # Assert that the sample expense exists in the database
+    assert sample_expense is not None
+    assert sample_expense.description == "Test Expense"
