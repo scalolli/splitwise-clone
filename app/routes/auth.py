@@ -12,7 +12,9 @@ def login():
         username = request.form.get('username')
         password = request.form.get('password')
         
-        user = User.query.filter_by(username=username).first()
+        user = db.session.execute(
+            db.select(User).filter_by(username=username)
+        ).scalar_one_or_none()
         
         if user and user.check_password(password):
             session['user_id'] = user.id
@@ -38,19 +40,27 @@ def register():
             error = "All fields are required"
         elif password != confirm_password:
             error = "Passwords do not match"
-        elif User.query.filter_by(username=username).first():
-            error = "Username already exists"
-        elif User.query.filter_by(email=email).first():
-            error = "Email already exists"
         else:
-            # Create new user with hashed password
-            new_user = User(username=username, email=email)
-            new_user.set_password(password)
-            db.session.add(new_user)
-            db.session.commit()
-            
-            flash('Your account has been created! You can now log in.', 'success')
-            return redirect(url_for('auth.login'))
+            existing_user = db.session.execute(
+                db.select(User).filter_by(username=username)
+            ).scalar_one_or_none()
+            if existing_user:
+                error = "Username already exists"
+            else:
+                existing_email = db.session.execute(
+                    db.select(User).filter_by(email=email)
+                ).scalar_one_or_none()
+                if existing_email:
+                    error = "Email already exists"
+                else:
+                    # Create new user with hashed password
+                    new_user = User(username=username, email=email)
+                    new_user.set_password(password)
+                    db.session.add(new_user)
+                    db.session.commit()
+                    flash('Your account has been created! You can now log in.', 'success')
+                    return redirect(url_for('auth.login'))
+        # If there was an error, fall through to render_template
     
     return render_template('register.html', error=error)
 

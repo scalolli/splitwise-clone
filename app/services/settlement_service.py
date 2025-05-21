@@ -41,7 +41,12 @@ class SettlementService:
         Returns:
             List of Settlement objects for the group
         """
-        settlements = Settlement.query.filter_by(group_id=group_id).order_by(Settlement.created_at.desc()).all()
+        stmt = (
+            db.select(Settlement)
+            .filter_by(group_id=group_id)
+            .order_by(Settlement.created_at.desc())
+        )
+        settlements = db.session.execute(stmt).scalars().all()
         return settlements
     
     @staticmethod
@@ -55,13 +60,17 @@ class SettlementService:
         Returns:
             List of Settlement objects involving the user
         """
-        settlements = Settlement.query.filter(
-            or_(
-                Settlement.from_user_id == user_id,
-                Settlement.to_user_id == user_id
+        stmt = (
+            db.select(Settlement)
+            .filter(
+                or_(
+                    Settlement.from_user_id == user_id,
+                    Settlement.to_user_id == user_id
+                )
             )
-        ).order_by(Settlement.created_at.desc()).all()
-        
+            .order_by(Settlement.created_at.desc())
+        )
+        settlements = db.session.execute(stmt).scalars().all()
         return settlements
     
     @staticmethod
@@ -77,7 +86,7 @@ class SettlementService:
         Returns:
             List of Settlement objects between the two users
         """
-        query = Settlement.query.filter(
+        stmt = db.select(Settlement).filter(
             or_(
                 # user1 paid user2
                 (Settlement.from_user_id == user1_id) & (Settlement.to_user_id == user2_id),
@@ -85,11 +94,10 @@ class SettlementService:
                 (Settlement.from_user_id == user2_id) & (Settlement.to_user_id == user1_id)
             )
         )
-        
         if group_id:
-            query = query.filter_by(group_id=group_id)
-            
-        settlements = query.order_by(Settlement.created_at.desc()).all()
+            stmt = stmt.filter(Settlement.group_id == group_id)
+        stmt = stmt.order_by(Settlement.created_at.desc())
+        settlements = db.session.execute(stmt).scalars().all()
         return settlements
     
     @staticmethod
@@ -105,22 +113,20 @@ class SettlementService:
         Returns:
             Net amount settled (positive if from_user has paid more to to_user)
         """
-        query = Settlement.query
-        
+        stmt = db.select(db.func.sum(Settlement.amount))
         if group_id:
-            query = query.filter_by(group_id=group_id)
-        
+            stmt = stmt.filter(Settlement.group_id == group_id)
         # Amount paid from from_user to to_user
-        paid = query.filter_by(
-            from_user_id=from_user_id,
-            to_user_id=to_user_id
-        ).with_entities(db.func.sum(Settlement.amount)).scalar() or 0
-        
+        paid_stmt = stmt.filter(
+            Settlement.from_user_id == from_user_id,
+            Settlement.to_user_id == to_user_id
+        )
+        paid = db.session.execute(paid_stmt).scalar() or 0
         # Amount paid from to_user to from_user
-        received = query.filter_by(
-            from_user_id=to_user_id,
-            to_user_id=from_user_id
-        ).with_entities(db.func.sum(Settlement.amount)).scalar() or 0
-        
+        received_stmt = stmt.filter(
+            Settlement.from_user_id == to_user_id,
+            Settlement.to_user_id == from_user_id
+        )
+        received = db.session.execute(received_stmt).scalar() or 0
         # Net amount (positive if from_user paid more)
         return paid - received

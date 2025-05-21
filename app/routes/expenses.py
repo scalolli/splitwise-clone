@@ -15,7 +15,10 @@ def add_expense(group_id):
         flash('Please log in to access this page', 'error')
         return redirect(url_for('auth.login'))
     
-    group = Group.query.get_or_404(group_id)
+    group = db.session.get(Group, group_id)
+    if not group:
+        from flask import abort
+        abort(404)
     
     # Check if user is a member of the group
     current_user_id = session['user_id']
@@ -111,7 +114,16 @@ def add_expense(group_id):
 @expenses_bp.route('/expenses/<int:expense_id>/edit', methods=['GET', 'POST'])
 def edit_expense(expense_id):
     # Eagerly load the group and its members
-    expense = Expense.query.options(db.joinedload(Expense.group).joinedload(Group.members)).get_or_404(expense_id)
+    stmt = (
+        db.select(Expense)
+        .options(db.joinedload(Expense.group).joinedload(Group.members), db.joinedload(Expense.shares))
+        .filter(Expense.id == expense_id)
+    )
+    result = db.session.execute(stmt)
+    expense = result.unique().scalar_one_or_none()
+    if not expense:
+        from flask import abort
+        abort(404)
     form = EditExpenseForm()
 
     # Populate choices for SelectFields
@@ -143,7 +155,9 @@ def edit_expense(expense_id):
         expense.payer_id = form.payer_id.data
 
         # Update expense splits
-        ExpenseShare.query.filter_by(expense_id=expense.id).delete()
+        db.session.execute(
+            db.delete(ExpenseShare).where(ExpenseShare.expense_id == expense.id)
+        )
         for split in form.splits.data:
             new_share = ExpenseShare(
                 expense_id=expense.id,

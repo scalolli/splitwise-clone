@@ -14,7 +14,9 @@ def group(group_id):
         flash('Please log in to access this page', 'error')
         return redirect(url_for('auth.login'))
     
-    group = Group.query.get_or_404(group_id)
+    group = db.session.get(Group, group_id)
+    if not group:
+        abort(404)
     
     # Calculate balances for the group
     balances = calculate_balances(group_id)
@@ -25,7 +27,9 @@ def group(group_id):
         user_ids.add(balance['from_user_id'])
         user_ids.add(balance['to_user_id'])
     
-    users = User.query.filter(User.id.in_(user_ids)).all()
+    users = db.session.execute(
+        db.select(User).filter(User.id.in_(user_ids))
+    ).scalars().all()
     user_map = {user.id: user for user in users}
     
     # Add user objects to balances for easy access in template
@@ -60,7 +64,7 @@ def create_group():
             )
             
             # Add current user as a member
-            current_user = User.query.get(session['user_id'])
+            current_user = db.session.get(User, session['user_id'])
             new_group.members.append(current_user)
             
             db.session.add(new_group)
@@ -78,7 +82,9 @@ def add_member(group_id):
         flash('Please log in to access this page', 'error')
         return redirect(url_for('auth.login'))
     
-    group = Group.query.get_or_404(group_id)
+    group = db.session.get(Group, group_id)
+    if not group:
+        abort(404)
     
     # Check if current user is the group creator
     if group.created_by_id != session['user_id']:
@@ -86,7 +92,9 @@ def add_member(group_id):
         return redirect(url_for('groups.group', group_id=group_id))
     
     username = request.form.get('username')
-    user = User.query.filter_by(username=username).first()
+    user = db.session.execute(
+        db.select(User).filter_by(username=username)
+    ).scalar_one_or_none()
     
     if not user:
         flash('User not found', 'error')
@@ -109,7 +117,9 @@ def remove_member(group_id, user_id):
         flash('Please log in to access this page', 'error')
         return redirect(url_for('auth.login'))
     
-    group = Group.query.get_or_404(group_id)
+    group = db.session.get(Group, group_id)
+    if not group:
+        abort(404)
     
     # Check if current user is the group creator
     if group.created_by_id != session['user_id']:
@@ -121,7 +131,9 @@ def remove_member(group_id, user_id):
         flash('Cannot remove the group creator', 'error')
         return redirect(url_for('groups.group', group_id=group_id))
     
-    user = User.query.get_or_404(user_id)
+    user = db.session.get(User, user_id)
+    if not user:
+        abort(404)
     
     if user not in group.members:
         flash('User is not a member of this group', 'error')

@@ -16,7 +16,10 @@ def calculate_balances(group_id):
         List of dictionaries with from_user_id, to_user_id, and amount
     """
     # Get the group and its members
-    group = Group.query.get_or_404(group_id)
+    group = db.session.get(Group, group_id)
+    if not group:
+        from flask import abort
+        abort(404)
     members = group.members
     
     # Initialize a dictionary to track balances between users
@@ -24,22 +27,22 @@ def calculate_balances(group_id):
     balances = {}
     
     # Get all expenses for the group
-    expenses = Expense.query.filter_by(group_id=group_id).all()
+    expenses = db.session.execute(
+        db.select(Expense).filter_by(group_id=group_id)
+    ).scalars().all()
     
     for expense in expenses:
         payer_id = expense.payer_id
-        
         # Get all shares for this expense
-        shares = ExpenseShare.query.filter_by(expense_id=expense.id).all()
-        
+        shares = db.session.execute(
+            db.select(ExpenseShare).filter_by(expense_id=expense.id)
+        ).scalars().all()
         for share in shares:
             user_id = share.user_id
             share_amount = share.amount
-            
             # Skip if the user is the payer (they don't owe themselves)
             if user_id == payer_id:
                 continue
-            
             # User owes the payer for their share
             key = (user_id, payer_id)
             balances[key] = balances.get(key, 0) + share_amount
