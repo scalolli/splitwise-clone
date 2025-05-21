@@ -109,20 +109,8 @@ def client(app, test_data):
 
 @pytest.fixture
 def db_session(app):
-    """Create a test database session."""    
-    # Create the database and tables
+    """Create a test database session (provides db.session, cleans up after)."""
     with app.app_context():
         db.create_all()
-        
         yield db.session
-        
-        # Clean up
-        _cleanup_db()
-
-@pytest.fixture(scope='session')
-def test_db(app):
-    """Provide a database session for tests."""
-    with app.app_context():
-        db.create_all()
-        yield db
         _cleanup_db()
