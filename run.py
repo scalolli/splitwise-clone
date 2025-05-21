@@ -4,7 +4,7 @@ from app.models.group import Group
 from app.models.expense import Expense
 from app.models.expense_share import ExpenseShare
 from app.models.settlement import Settlement
-from datetime import datetime
+import datetime
 
 app = create_app()
 
@@ -33,12 +33,12 @@ def create_sample_data():
         db.session.flush()
         
         # Create groups
-        group1 = Group(name='Apartment', description='Apartment expenses', created_at=datetime.utcnow())
+        group1 = Group(name='Apartment', description='Apartment expenses', created_at=datetime.datetime.now(datetime.timezone.utc))
         group1.created_by_id = user1.id
         group1.members.append(user1)
         group1.members.append(user2)
         
-        group2 = Group(name='Trip', description='Vacation expenses', created_at=datetime.utcnow())
+        group2 = Group(name='Trip', description='Vacation expenses', created_at=datetime.datetime.now(datetime.timezone.utc))
         group2.created_by_id = user1.id
         group2.members.append(user1)
         group2.members.append(user2)
@@ -52,7 +52,7 @@ def create_sample_data():
         expense1 = Expense(
             description='Groceries', 
             amount=100.0, 
-            date=datetime.utcnow(),
+            date=datetime.datetime.now(datetime.timezone.utc),
             payer_id=user1.id,
             group_id=group1.id
         )
@@ -60,7 +60,7 @@ def create_sample_data():
         expense2 = Expense(
             description='Rent', 
             amount=1000.0, 
-            date=datetime.utcnow(),
+            date=datetime.datetime.now(datetime.timezone.utc),
             payer_id=user2.id,
             group_id=group1.id
         )
@@ -68,7 +68,7 @@ def create_sample_data():
         expense3 = Expense(
             description='Hotel', 
             amount=300.0, 
-            date=datetime.utcnow(),
+            date=datetime.datetime.now(datetime.timezone.utc),
             payer_id=user1.id,
             group_id=group2.id
         )

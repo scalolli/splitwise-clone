@@ -3,7 +3,7 @@ from app.models.expense import Expense
 from app.models.expense_share import ExpenseShare
 from app.models.group import Group
 from app import db
-from datetime import datetime
+import datetime
 from app.forms.edit_expense_form import EditExpenseForm
 
 expenses_bp = Blueprint('expenses', __name__)
@@ -49,7 +49,7 @@ def add_expense(group_id):
         expense = Expense(
             description=description,
             amount=amount,
-            date=datetime.utcnow(),
+            date=datetime.datetime.now(datetime.timezone.utc),
             payer_id=current_user_id,
             group_id=group_id
         )

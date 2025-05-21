@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from app.models.group import Group
 from app.models.user import User
 from app import db
-from datetime import datetime
+import datetime
 from app.services.balance_service import calculate_balances
 
 groups_bp = Blueprint('groups', __name__)
@@ -59,7 +59,7 @@ def create_group():
             new_group = Group(
                 name=name,
                 description=description,
-                created_at=datetime.utcnow(),
+                created_at=datetime.datetime.now(datetime.timezone.utc),
                 created_by_id=session['user_id']
             )
             
