@@ -1,8 +1,9 @@
+
 from flask_wtf import FlaskForm
-from wtforms import StringField, DecimalField, DateField, SelectField, FieldList, FormField
+from wtforms import StringField, DecimalField, DateField, SelectField, FieldList, FormField, Form
 from wtforms.validators import DataRequired, NumberRange, Optional
 
-class ExpenseSplitForm(FlaskForm):
+class ExpenseSplitForm(Form):
     user_id = SelectField("User", coerce=int, validators=[DataRequired()])
     amount = DecimalField("Amount", validators=[DataRequired(), NumberRange(min=0)])
 
