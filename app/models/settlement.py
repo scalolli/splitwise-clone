@@ -1,5 +1,5 @@
 from app import db
-from datetime import datetime
+import datetime
 from app.models.user import User  # Import to check the actual table name
 from app.models.group import Group  # Import to check the actual table name
 
@@ -11,7 +11,7 @@ class Settlement(db.Model):
     to_user_id = db.Column(db.Integer, db.ForeignKey(User.__tablename__ + '.id'), nullable=False)
     amount = db.Column(db.Float, nullable=False)
     group_id = db.Column(db.Integer, db.ForeignKey(Group.__tablename__ + '.id'), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.now, nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc), nullable=False)
     
     # Define relationships
     from_user = db.relationship('User', foreign_keys=[from_user_id])
