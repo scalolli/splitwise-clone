@@ -146,9 +146,14 @@ def edit_expense(expense_id):
             split_form.user_id.data = share.user_id
             split_form.amount.data = share.amount
             split_form.user_id.choices = [(user.id, user.username) for user in expense.group.members]
+    
+    for entry in form.splits.entries:
+        # Set choices for each split entry
+        print("Setting choices for split entry:", entry.data)
 
     if form.validate_on_submit():
         # Update expense details
+        print("Saving expense:", form.description.data, form.amount.data, form.date.data, form.payer_id.data)
         expense.description = form.description.data
         expense.amount = form.amount.data
         expense.date = form.date.data
@@ -170,4 +175,5 @@ def edit_expense(expense_id):
         flash('Expense updated successfully!', 'success')
         return redirect(url_for('groups.group', group_id=expense.group_id))
 
+    print("Form errors:", form.errors)
     return render_template('expenses/edit.html', form=form, expense=expense)

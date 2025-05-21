@@ -58,3 +58,27 @@ def test_render_shared_expenses(client, sample_expense, empty_db_session):
     # Assert that the sample expense exists in the database
     assert sample_expense is not None
     assert sample_expense.description == "Test Expense"
+
+def test_edit_expense_form_errors_displayed(client, sample_expense):
+    """Test that form validation errors ARE displayed on the edit expense page when invalid data is submitted."""
+    # Submit invalid data: empty description and negative amount
+    data = {
+        'description': '',  # Required field left blank
+        'amount': -10,      # Invalid negative amount
+        'payer_id': 1,
+        'splits-0-user_id': 1,
+        'splits-0-amount': -10
+    }
+    response = client.post(
+        url_for('expenses.edit_expense', expense_id=sample_expense.id),
+        data=data,
+        follow_redirects=True
+    )
+    assert response.status_code == 200
+    # Check that common WTForms error messages ARE present
+    assert (
+        b'This field is required' in response.data or
+        b'Not a valid' in response.data or
+        b'Invalid' in response.data or
+        b'Amount must be greater than' in response.data
+    ), "Expected form error messages to be displayed, but none were found."
