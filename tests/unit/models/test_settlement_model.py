@@ -1,7 +1,7 @@
 import pytest
 from datetime import datetime
 
-def test_settlement_model_basic(app, test_data):
+def test_settlement_model_basic(app, populated_test_db):
     """Test that the basic Settlement model can be created and saved to the database"""
     from app import db
     from app.models.user import User

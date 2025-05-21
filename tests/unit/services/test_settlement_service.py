@@ -4,7 +4,7 @@ from app.models.settlement import Settlement
 from app.models.user import User
 from app.models.group import Group
 
-def test_create_settlement(app, test_data):
+def test_create_settlement(app, populated_test_db):
     """Test creating a new settlement between users"""
     from app import db
     
@@ -43,7 +43,7 @@ def test_create_settlement(app, test_data):
         db_settlement = Settlement.query.get(settlement.id)
         assert db_settlement is not None
 
-def test_get_settlements_for_group(app, test_data):
+def test_get_settlements_for_group(app, populated_test_db):
     """Test retrieving all settlements for a specific group"""
     from app import db
     
@@ -89,7 +89,7 @@ def test_get_settlements_for_group(app, test_data):
         assert settlements[0].group_id == group.id
         assert settlements[1].group_id == group.id
 
-def test_get_settlements_for_user(app, test_data):
+def test_get_settlements_for_user(app, populated_test_db):
     """Test retrieving all settlements involving a specific user"""
     from app import db
     

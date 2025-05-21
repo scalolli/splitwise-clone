@@ -75,7 +75,7 @@ def test_create_group_with_invalid_data(client):
     assert response.status_code == 200
     assert b'Group name is required' in response.data
 
-def test_add_member_to_group(client, app, test_data):
+def test_add_member_to_group(client, app, populated_test_db):
     """Test adding a member to a group"""
     # First login as user1 (who created the apartment group)
     client.post('/login', data={
@@ -84,7 +84,7 @@ def test_add_member_to_group(client, app, test_data):
     })
     
     # Get the group ID
-    group_id = test_data['groups']['apartment'].id
+    group_id = populated_test_db['groups']['apartment'].id
     
     # Add user3 to the group
     response = client.post(f'/group/{group_id}/add_member', data={
@@ -105,7 +105,7 @@ def test_add_member_to_group(client, app, test_data):
         
         assert user3 in group.members
 
-def test_add_nonexistent_member_to_group(client, test_data):
+def test_add_nonexistent_member_to_group(client, populated_test_db):
     """Test adding a nonexistent user to a group"""
     # First login
     client.post('/login', data={
@@ -114,7 +114,7 @@ def test_add_nonexistent_member_to_group(client, test_data):
     })
     
     # Get the group ID
-    group_id = test_data['groups']['apartment'].id
+    group_id = populated_test_db['groups']['apartment'].id
     
     # Try to add a nonexistent user to the group
     response = client.post(f'/group/{group_id}/add_member', data={
@@ -124,7 +124,7 @@ def test_add_nonexistent_member_to_group(client, test_data):
     assert response.status_code == 200
     assert b'User not found' in response.data
 
-def test_remove_member_from_group(client, app, test_data):
+def test_remove_member_from_group(client, app, populated_test_db):
     """Test removing a member from a group"""
     # First login as user1 (who created the apartment group)
     client.post('/login', data={
@@ -133,8 +133,8 @@ def test_remove_member_from_group(client, app, test_data):
     })
     
     # Get the group ID and user2's ID
-    group_id = test_data['groups']['apartment'].id
-    user2_id = test_data['users']['user2'].id
+    group_id = populated_test_db['groups']['apartment'].id
+    user2_id = populated_test_db['users']['user2'].id
     
     # Remove user2 from the group
     response = client.post(f'/group/{group_id}/remove_member/{user2_id}', 

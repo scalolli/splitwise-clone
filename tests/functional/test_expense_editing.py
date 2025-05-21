@@ -4,11 +4,11 @@ from app.models.expense import Expense
 from app.models.expense_share import ExpenseShare
 
 @pytest.fixture
-def sample_expense(client, db_session):
+def sample_expense(client, empty_db_session):
     # Create a sample expense for testing
     expense = Expense(description="Test Expense", amount=100, payer_id=1, group_id=1)
-    db_session.add(expense)
-    db_session.commit()
+    empty_db_session.add(expense)
+    empty_db_session.commit()
     return expense
 
 def test_edit_expense_get(client, sample_expense):
@@ -17,7 +17,7 @@ def test_edit_expense_get(client, sample_expense):
     assert response.status_code == 200
     assert b"Edit Expense" in response.data
 
-def test_edit_expense_post(client, sample_expense, db_session):
+def test_edit_expense_post(client, sample_expense, empty_db_session):
     # Test POST request to update expense
     data = {
         'description': "Updated Expense",
@@ -34,13 +34,13 @@ def test_edit_expense_post(client, sample_expense, db_session):
     assert len(updated_expense.shares) == 1
     assert updated_expense.shares[0].amount == 150
 
-def test_render_shared_expenses(client, sample_expense, db_session):
+def test_render_shared_expenses(client, sample_expense, empty_db_session):
     """Test if shared expenses are rendered properly on the edit expense page."""
     # Add shared expenses for the sample expense
     share1 = ExpenseShare(expense_id=sample_expense.id, user_id=1, amount=50)
     share2 = ExpenseShare(expense_id=sample_expense.id, user_id=2, amount=50)
-    db_session.add_all([share1, share2])
-    db_session.commit()
+    empty_db_session.add_all([share1, share2])
+    empty_db_session.commit()
 
     # Navigate to the edit expense page
     response = client.get(url_for('expenses.edit_expense', expense_id=sample_expense.id))

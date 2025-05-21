@@ -1,11 +1,11 @@
 import pytest
 from app import db
 
-def test_user_model(app, test_data):
+def test_user_model(app, populated_test_db):
     """Test User model relationships"""
     with app.app_context():
         # Use the user from test_data instead of querying
-        user = test_data['users']['user1']
+        user = populated_test_db['users']['user1']
         assert user is not None
         assert user.username == 'user1'
         
@@ -20,11 +20,11 @@ def test_user_model(app, test_data):
         expenses_paid = list(user.expenses_paid)
         assert len(expenses_paid) > 0
 
-def test_group_model(app, test_data):
+def test_group_model(app, populated_test_db):
     """Test Group model relationships"""
     with app.app_context():
         # Use the group from test_data instead of querying
-        group = test_data['groups']['apartment']
+        group = populated_test_db['groups']['apartment']
         assert group is not None
         assert group.name == 'Apartment'
         
@@ -42,11 +42,11 @@ def test_group_model(app, test_data):
         assert 'Groceries' in expense_descriptions
         assert 'Rent' in expense_descriptions
 
-def test_expense_model(app, test_data):
+def test_expense_model(app, populated_test_db):
     """Test Expense model relationships"""
     with app.app_context():
         # Use the expense from test_data instead of querying
-        expense = test_data['expenses']['groceries']
+        expense = populated_test_db['expenses']['groceries']
         assert expense is not None
         assert expense.description == 'Groceries'
         assert expense.amount == 100.0
@@ -58,11 +58,11 @@ def test_expense_model(app, test_data):
         assert len(shares) == 2
         assert shares[0].amount + shares[1].amount == expense.amount
 
-def test_expense_share_model(app, test_data):
+def test_expense_share_model(app, populated_test_db):
     """Test ExpenseShare model relationships"""
     with app.app_context():
         # Get the first expense share from the groceries expense
-        expense = test_data['expenses']['groceries']
+        expense = populated_test_db['expenses']['groceries']
         shares = list(expense.shares)
         assert len(shares) > 0
         

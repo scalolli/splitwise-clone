@@ -1,4 +1,4 @@
-def test_balance_display_on_group_page(client, app, test_data):
+def test_balance_display_on_group_page(client, app, populated_test_db):
     """Test that balances are displayed on the group page."""
     # Log in the user
     # First login as user1 (who created the apartment group)

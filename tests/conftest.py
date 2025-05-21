@@ -54,8 +54,8 @@ def _create_share(expense_id, user_id, amount):
     return ExpenseShare(expense_id=expense_id, user_id=user_id, amount=amount)
 
 @pytest.fixture
-def test_data(app):
-    """Create test data in the database."""
+def populated_test_db(app):
+    """Provides a pre-populated database with users, groups, expenses, and shares for tests that need a realistic dataset."""
     with app.app_context():
         db.create_all()
 
@@ -102,14 +102,14 @@ def test_data(app):
         _cleanup_db()
 
 @pytest.fixture
-def client(app, test_data):
-    """Create a test client for the app."""
+def client(app, populated_test_db):
+    """Create a test client for the app, with a pre-populated database."""
     with app.test_client() as client:
         yield client
 
 @pytest.fixture
-def db_session(app):
-    """Create a test database session (provides db.session, cleans up after)."""
+def empty_db_session(app):
+    """Provides a blank database session for tests that want to set up their own data from scratch."""
     with app.app_context():
         db.create_all()
         yield db.session
