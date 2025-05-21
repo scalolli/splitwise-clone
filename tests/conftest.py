@@ -1,3 +1,7 @@
+# --- Centralized DB cleanup helper ---
+def _cleanup_db():
+    db.session.remove()
+    db.drop_all()
 import pytest
 from app import create_app, db
 from app.models.user import User
@@ -6,6 +10,10 @@ from app.models.expense import Expense
 from app.models.expense_share import ExpenseShare
 from config import Config
 import datetime
+
+# --- Utility function for UTC now ---
+def now_utc():
+    return datetime.datetime.now(datetime.timezone.utc)
 
 class TestConfig(Config):
     TESTING = True
@@ -27,7 +35,7 @@ def _create_user(username, email, password):
     return user
 
 def _create_group(name, description, created_by_id, members):
-    group = Group(name=name, description=description, created_at=datetime.datetime.now(datetime.timezone.utc))
+    group = Group(name=name, description=description, created_at=now_utc())
     group.created_by_id = created_by_id
     for member in members:
         group.members.append(member)
@@ -65,7 +73,7 @@ def test_data(app):
         db.session.flush()
 
         # Expenses
-        now = datetime.datetime.now(datetime.timezone.utc)
+        now = now_utc()
         expense1 = _create_expense('Groceries', 100.0, now, user1.id, group1.id)
         expense2 = _create_expense('Rent', 1000.0, now, user2.id, group1.id)
         expense3 = _create_expense('Hotel', 300.0, now, user1.id, group2.id)
@@ -91,8 +99,7 @@ def test_data(app):
             'expenses': {'groceries': expense1, 'rent': expense2, 'hotel': expense3}
         }
         yield test_data
-        db.session.remove()
-        db.drop_all()
+        _cleanup_db()
 
 @pytest.fixture
 def client(app, test_data):
@@ -110,8 +117,7 @@ def db_session(app):
         yield db.session
         
         # Clean up
-        db.session.remove()
-        db.drop_all()
+        _cleanup_db()
 
 @pytest.fixture(scope='session')
 def test_db(app):
@@ -119,5 +125,4 @@ def test_db(app):
     with app.app_context():
         db.create_all()
         yield db
-        db.session.remove()
-        db.drop_all()
+        _cleanup_db()
