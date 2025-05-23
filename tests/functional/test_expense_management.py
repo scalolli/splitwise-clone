@@ -56,8 +56,8 @@ def test_add_expense_page_loads(client):
     # Check that the page loads correctly
     assert response.status_code == 200
     assert b'Add New Expense' in response.data
-    assert b'Description:' in response.data
-    assert b'Amount:' in response.data
+    assert b'Description' in response.data
+    assert b'Amount' in response.data
 
 from app.models.expense import Expense
 
@@ -67,10 +67,17 @@ def test_submit_add_expense_form(client):
     with client.session_transaction() as session:
         session['user_id'] = 1
     
-    # Submit the add expense form
+    # Submit the add expense form with WTForms field names
     response = client.post('/group/1/add_expense', data={
         'description': 'Test Expense',
-        'amount': '50.00'
+        'amount': '50.00',
+        'payer_id': 1,
+        'splits-0-user_id': 1,
+        'splits-0-amount': '25.00',
+        'splits-1-user_id': 2,
+        'splits-1-amount': '25.00',
+        'splits-0-csrf_token': '',
+        'splits-1-csrf_token': ''
     }, follow_redirects=True)
     
     # Check that the form submission was successful
@@ -96,7 +103,14 @@ def test_expense_shares_creation(client):
     # Submit the add expense form
     client.post('/group/1/add_expense', data={
         'description': 'Shared Expense',
-        'amount': '100.00'
+        'amount': '100.00',
+        'payer_id': 1,
+        'splits-0-user_id': 1,
+        'splits-0-amount': '50.00',
+        'splits-1-user_id': 2,
+        'splits-1-amount': '50.00',
+        'splits-0-csrf_token': '',
+        'splits-1-csrf_token': ''
     })
     
     # Check that expense shares were created
@@ -125,9 +139,13 @@ def test_add_expense_with_custom_split(client):
     response = client.post('/group/1/add_expense', data={
         'description': 'Custom Split Expense',
         'amount': '100.00',
-        'split_type': 'custom',
-        'split_amounts[1]': '70.00',  # User 1 pays 70%
-        'split_amounts[2]': '30.00'   # User 2 pays 30%
+        'payer_id': 1,
+        'splits-0-user_id': 1,
+        'splits-0-amount': '70.00',
+        'splits-1-user_id': 2,
+        'splits-1-amount': '30.00',
+        'splits-0-csrf_token': '',
+        'splits-1-csrf_token': ''
     }, follow_redirects=True)
     
     # Check that the form submission was successful
@@ -151,3 +169,4 @@ def test_add_expense_with_custom_split(client):
         assert user2_share is not None
         assert user1_share.amount == 70.00
         assert user2_share.amount == 30.00
+

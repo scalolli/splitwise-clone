@@ -6,94 +6,51 @@
 <div class="container">
     <h1>Add New Expense</h1>
     <h2>Group: {{ group.name }}</h2>
-    
     <form method="post" id="expense-form">
+        {{ form.hidden_tag() }}
         <div>
-            <label for="description">Description:</label>
-            <input type="text" id="description" name="description" required>
-        </div>
-        
-        <div>
-            <label for="amount">Amount:</label>
-            <input type="number" id="amount" name="amount" step="0.01" min="0.01" required>
-        </div>
-        
-        <div>
-            <label for="split_type">Split Type:</label>
-            <select id="split_type" name="split_type" onchange="showSplitOptions()">
-                <option value="equal">Equal Split</option>
-                <option value="custom">Custom Split</option>
-            </select>
-        </div>
-        
-        <div id="equal-split-section" class="split-section">
-            <p>The expense will be split equally among all members.</p>
-        </div>
-        
-        <div id="custom-split-section" class="split-section" style="display: none;">
-            <h3>Custom Split</h3>
-            <p>Specify how much each person should pay:</p>
-            
-            {% for member in group.members %}
-            <div>
-                <label for="split_amounts_{{ member.id }}">{{ member.username }}:</label>
-                <input type="number" id="split_amounts_{{ member.id }}" name="split_amounts[{{ member.id }}]" 
-                       step="0.01" min="0" value="0.00">
-            </div>
+            {{ form.description.label }}<br>
+            {{ form.description(class_="form-control") }}
+            {% for error in form.description.errors %}
+                <span class="text-danger">{{ error }}</span>
             {% endfor %}
-            
-            <p id="split-total">Total: $0.00 / $<span id="expense-amount">0.00</span></p>
         </div>
-        
         <div>
-            <button type="submit">Add Expense</button>
-            <a href="{{ url_for('groups.group', group_id=group.id) }}">Cancel</a>
+            {{ form.amount.label }}<br>
+            {{ form.amount(class_="form-control") }}
+            {% for error in form.amount.errors %}
+                <span class="text-danger">{{ error }}</span>
+            {% endfor %}
+        </div>
+        <div>
+            {{ form.payer_id.label }}<br>
+            {{ form.payer_id(class_="form-control") }}
+            {% for error in form.payer_id.errors %}
+                <span class="text-danger">{{ error }}</span>
+            {% endfor %}
+        </div>
+        <h3>Splits</h3>
+        <div>
+            {% for split_form in form.splits %}
+                <div class="split-entry">
+                    {{ split_form.user_id.label }}
+                    {{ split_form.user_id(class_="form-control d-inline w-auto") }}
+                    {{ split_form.amount.label }}
+                    {{ split_form.amount(class_="form-control d-inline w-auto") }}
+                    {% for error in split_form.amount.errors %}
+                        <span class="text-danger">{{ error }}</span>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+            {% for error in form.splits.errors %}
+                <span class="text-danger">{{ error }}</span>
+            {% endfor %}
+        </div>
+        <div class="mt-3">
+            <button type="submit" class="btn btn-primary">Add Expense</button>
+            <a href="{{ url_for('groups.group', group_id=group.id) }}" class="btn btn-secondary">Cancel</a>
         </div>
     </form>
 </div>
-
-<script>
-    function showSplitOptions() {
-        const splitType = document.getElementById('split_type').value;
-        
-        // Hide all split sections
-        document.querySelectorAll('.split-section').forEach(section => {
-            section.style.display = 'none';
-        });
-        
-        // Show the selected split section
-        if (splitType === 'equal') {
-            document.getElementById('equal-split-section').style.display = 'block';
-        } else if (splitType === 'custom') {
-            document.getElementById('custom-split-section').style.display = 'block';
-            updateSplitAmounts();
-        }
-    }
-    
-    function updateSplitAmounts() {
-        const totalAmount = parseFloat(document.getElementById('amount').value) || 0;
-        document.getElementById('expense-amount').textContent = totalAmount.toFixed(2);
-        
-        // Calculate total of split amounts
-        let splitTotal = 0;
-        const splitInputs = document.querySelectorAll('[id^="split_amounts_"]');
-        splitInputs.forEach(input => {
-            splitTotal += parseFloat(input.value) || 0;
-        });
-        
-        document.getElementById('split-total').textContent = 
-            `Total: $${splitTotal.toFixed(2)} / $${totalAmount.toFixed(2)}`;
-    }
-    
-    // Add event listeners
-    document.getElementById('amount').addEventListener('input', updateSplitAmounts);
-    document.querySelectorAll('[id^="split_amounts_"]').forEach(input => {
-        input.addEventListener('input', updateSplitAmounts);
-    });
-    
-    // Initialize
-    document.addEventListener('DOMContentLoaded', function() {
-        showSplitOptions();
-    });
-</script>
 {% endblock %}
+

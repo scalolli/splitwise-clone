@@ -5,6 +5,7 @@ from app.models.group import Group
 from app import db
 from app.utils.datetime import utcnow
 from app.forms.edit_expense_form import EditExpenseForm
+from app.forms.add_expense_form import AddExpenseForm
 
 expenses_bp = Blueprint('expenses', __name__)
 
@@ -25,92 +26,52 @@ def add_expense(group_id):
     if current_user_id not in [member.id for member in group.members]:
         flash('You are not a member of this group', 'error')
         return redirect(url_for('main.index'))
-    
-    if request.method == 'POST':
-        description = request.form.get('description')
-        amount_str = request.form.get('amount')
-        split_type = request.form.get('split_type', 'equal')
-        
-        # Validate input
-        if not description or not amount_str:
-            flash('Description and amount are required', 'error')
-            return render_template('expenses/add.html', group=group)
-        
-        try:
-            amount = float(amount_str)
-            if amount <= 0:
-                flash('Amount must be positive', 'error')
-                return render_template('expenses/add.html', group=group)
-        except ValueError:
-            flash('Amount must be a valid number', 'error')
-            return render_template('expenses/add.html', group=group)
-        
+
+    form = AddExpenseForm()
+    form.payer_id.choices = [(user.id, user.username) for user in group.members]
+    for split_form in form.splits:
+        split_form.user_id.choices = [(user.id, user.username) for user in group.members]
+
+    if request.method == 'GET':
+        # Prepopulate splits for all group members (equal split by default)
+        form.splits.entries = []
+        member_count = len(group.members)
+        default_share = 0
+        if member_count > 0:
+            default_share = 1 / member_count
+        for member in group.members:
+            split_form = form.splits.append_entry()
+            split_form.user_id.data = member.id
+            split_form.amount.data = 0
+            split_form.user_id.choices = [(user.id, user.username) for user in group.members]
+
+    if form.validate_on_submit():
+        description = form.description.data
+        amount = float(form.amount.data)
+        payer_id = form.payer_id.data
         # Create new expense
         expense = Expense(
             description=description,
             amount=amount,
-            # utcnow already imported at module level if needed
             date=utcnow(),
-            payer_id=current_user_id,
+            payer_id=payer_id,
             group_id=group_id
         )
         db.session.add(expense)
-        db.session.flush()  # Get the expense ID before committing
-        
-        # Create expense shares based on split type
-        if split_type == 'equal':
-            # Equal split
-            member_count = len(group.members)
-            share_amount = amount / member_count
-            
-            for member in group.members:
-                share = ExpenseShare(
-                    expense_id=expense.id,
-                    user_id=member.id,
-                    amount=share_amount
-                )
-                db.session.add(share)
-        
-        elif split_type == 'custom':
-            # Custom split
-            total_split = 0
-            shares = []
-            
-            for member in group.members:
-                share_amount_str = request.form.get(f'split_amounts[{member.id}]', '0')
-                try:
-                    share_amount = float(share_amount_str)
-                    if share_amount < 0:
-                        flash('Share amounts cannot be negative', 'error')
-                        return render_template('expenses/add.html', group=group)
-                    
-                    total_split += share_amount
-                    
-                    share = ExpenseShare(
-                        expense_id=expense.id,
-                        user_id=member.id,
-                        amount=share_amount
-                    )
-                    shares.append(share)
-                except ValueError:
-                    flash('Share amounts must be valid numbers', 'error')
-                    return render_template('expenses/add.html', group=group)
-            
-            # Validate total split amount
-            if abs(total_split - amount) > 0.01:  # Allow small rounding errors
-                flash(f'Total of share amounts ({total_split:.2f}) must equal the expense amount ({amount:.2f})', 'error')
-                return render_template('expenses/add.html', group=group)
-            
-            # Add all shares to the session
-            for share in shares:
-                db.session.add(share)
-        
+        db.session.flush()
+        # Add splits
+        for split in form.splits.data:
+            share = ExpenseShare(
+                expense_id=expense.id,
+                user_id=split['user_id'],
+                amount=split['amount']
+            )
+            db.session.add(share)
         db.session.commit()
-        
         flash('Expense added successfully', 'success')
         return redirect(url_for('groups.group', group_id=group_id))
-    
-    return render_template('expenses/add.html', group=group)
+
+    return render_template('expenses/add.html', group=group, form=form)
 
 @expenses_bp.route('/expenses/<int:expense_id>/edit', methods=['GET', 'POST'])
 def edit_expense(expense_id):
@@ -177,4 +138,5 @@ def edit_expense(expense_id):
         return redirect(url_for('groups.group', group_id=expense.group_id))
 
     print("Form errors:", form.errors)
-    return render_template('expenses/edit.html', form=form, expense=expense)  
+    return render_template('expenses/edit.html', form=form, expense=expense)
+
