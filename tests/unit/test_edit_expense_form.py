@@ -31,14 +31,8 @@ from app.forms.edit_expense_form import EditExpenseForm
 def test_edit_expense_form_validation(formdata, expected_error_field, app):
     with app.app_context():
         form = EditExpenseForm(formdata)
-        # Patch choices for SelectFields (simulate user1 and user2 as possible payers/members)
         user_choices = [(1, 'user1'), (2, 'user2')]
-        form.payer_id.choices = user_choices
-        # If splits is a FieldList of subforms with user_id as SelectField, patch those too
-        if hasattr(form, 'splits'):
-            for subform in form.splits:
-                if hasattr(subform, 'user_id'):
-                    subform.user_id.choices = user_choices
+        patch_user_choices(form, user_choices)
         valid = form.validate()
         print(f"Form data: {formdata}, Valid: {valid}, Errors: {form.errors}")
         assert not valid, "Form should not validate with invalid data."
@@ -61,13 +55,8 @@ def test_edit_expense_form_payer_must_be_group_member(app):
             'splits-0-amount': 50
         })
         form = EditExpenseForm(formdata)
-        # Only user1 and user2 are group members
         user_choices = [(1, 'user1'), (2, 'user2')]
-        form.payer_id.choices = user_choices
-        if hasattr(form, 'splits'):
-            for subform in form.splits:
-                if hasattr(subform, 'user_id'):
-                    subform.user_id.choices = user_choices
+        patch_user_choices(form, user_choices)
         valid = form.validate()
         print(f"Payer not in group: Valid: {valid}, Errors: {form.errors}")
         assert not valid, "Form should not validate if payer is not a group member."
@@ -88,13 +77,17 @@ def test_edit_expense_form_splits_must_sum_to_total(app):
         })
         form = EditExpenseForm(formdata)
         user_choices = [(1, 'user1'), (2, 'user2')]
-        form.payer_id.choices = user_choices
-        if hasattr(form, 'splits'):
-            for subform in form.splits:
-                if hasattr(subform, 'user_id'):
-                    subform.user_id.choices = user_choices
+        patch_user_choices(form, user_choices)
         valid = form.validate()
         print(f"Splits sum: Valid: {valid}, Errors: {form.errors}")
         assert not valid, "Form should not validate if splits do not sum to total."
         assert 'splits' in form.errors, f"Expected error for splits, got: {form.errors}"
-        assert any('sum of all splits' in msg.lower() for msg in form.errors['splits']), f"Expected 'sum of all splits' error, got: {form.errors['splits']}"        
+        assert any('sum of all splits' in msg.lower() for msg in form.errors['splits']), f"Expected 'sum of all splits' error, got: {form.errors['splits']}"                 
+
+def patch_user_choices(form, user_choices):
+    """Patch choices for payer_id and all splits' user_id fields."""
+    form.payer_id.choices = user_choices
+    if hasattr(form, 'splits'):
+        for subform in form.splits:
+            if hasattr(subform, 'user_id'):
+                subform.user_id.choices = user_choices
