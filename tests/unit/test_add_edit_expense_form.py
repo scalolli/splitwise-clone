@@ -87,6 +87,25 @@ def test_expense_form_splits_must_sum_to_total(form_class, app):
         assert 'splits' in form.errors, f"Expected error for splits, got: {form.errors}"
         assert any('sum of all splits' in msg.lower() for msg in form.errors['splits']), f"Expected 'sum of all splits' error, got: {form.errors['splits']}"
 
+@pytest.mark.parametrize("form_class", [EditExpenseForm, AddExpenseForm])
+def test_payer_must_be_among_split_users(form_class, app):
+    """Test that the form is invalid if payer is not among split users."""
+    with app.app_context():
+        formdata = MultiDict({
+            'description': 'Dinner',
+            'amount': 100,
+            'payer_id': 2,  # payer is user 2
+            'splits-0-user_id': 1,  # only user 1 in splits
+            'splits-0-amount': 100
+        })
+        form = form_class(formdata)
+        user_choices = [(1, 'user1'), (2, 'user2')]
+        patch_user_choices(form, user_choices)
+        valid = form.validate()
+        assert not valid, "Form should not validate if payer is not among split users."
+        assert 'splits' in form.errors, "Expected error on splits field."
+        assert any('payer' in msg.lower() for msg in form.errors['splits']), "Expected error message about payer in splits."
+
 def patch_user_choices(form, user_choices):
     form.payer_id.choices = user_choices
     if hasattr(form, 'splits'):

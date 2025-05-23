@@ -32,5 +32,9 @@ class BaseExpenseForm(FlaskForm):
         if len(user_ids) != len(set(user_ids)):
             self.splits.errors.append("Each split must have a unique user. Duplicate users found.")
             return False
+        # Validation: Payer must be among the split users
+        if self.payer_id.data not in user_ids:
+            self.splits.errors.append("Payer must be included among the split users.")
+            return False
         return True
 
