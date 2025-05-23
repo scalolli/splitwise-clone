@@ -20,3 +20,17 @@ class EditExpenseForm(FlaskForm):
             # Remove the default error if present
             field.errors[:] = []
             raise ValidationError("Selected payer is not a member of the group.")
+        
+    def validate(self, extra_validators=None):
+        rv = super().validate(extra_validators)
+        if not rv:
+            return False
+
+        # Splits must sum to total amount
+        total = self.amount.data or 0
+        split_sum = sum([split_form.amount.data or 0 for split_form in self.splits])
+        if round(split_sum, 2) != round(total, 2):
+            self.splits.errors.append("The sum of all splits must equal the total amount.")
+            return False
+
+        return True        
