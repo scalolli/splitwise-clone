@@ -1,3 +1,4 @@
+from app import db
 import pytest
 from datetime import datetime
 from app.models.settlement import Settlement
@@ -6,7 +7,6 @@ from app.models.group import Group
 
 def test_create_settlement(app, populated_test_db):
     """Test creating a new settlement between users"""
-    from app import db
     
     with app.app_context():
         # Create test users and group
@@ -40,13 +40,11 @@ def test_create_settlement(app, populated_test_db):
         assert settlement.group_id == group.id
         
         # Verify it was saved to the database
-        from app import db
         db_settlement = db.session.get(Settlement, settlement.id)
         assert db_settlement is not None
 
 def test_get_settlements_for_group(app, populated_test_db):
     """Test retrieving all settlements for a specific group"""
-    from app import db
     
     with app.app_context():
         # Create test users and group
@@ -92,7 +90,6 @@ def test_get_settlements_for_group(app, populated_test_db):
 
 def test_get_settlements_for_user(app, populated_test_db):
     """Test retrieving all settlements involving a specific user"""
-    from app import db
     
     with app.app_context():
         # Create test users and group
@@ -145,4 +142,4 @@ def test_get_settlements_for_user(app, populated_test_db):
         assert len(settlements) == 2
         # Check that all returned settlements involve user1
         for settlement in settlements:
-            assert settlement.from_user_id == user1.id or settlement.to_user_id == user1.id
+            assert settlement.from_user_id == user1.id or settlement.to_user_id == user1.id        # Check that all returned settlements involve user1

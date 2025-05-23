@@ -1,3 +1,4 @@
+from app import db
 import pytest
 from flask import url_for
 from app.models.expense import Expense
@@ -28,7 +29,6 @@ def test_edit_expense_post(client, sample_expense, empty_db_session):
     }
     response = client.post(url_for('expenses.edit_expense', expense_id=sample_expense.id), data=data, follow_redirects=True)
     assert response.status_code == 200
-    from app import db
     updated_expense = db.session.get(Expense, sample_expense.id)
     assert updated_expense.description == "Updated Expense"
     assert updated_expense.amount == 150

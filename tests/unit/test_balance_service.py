@@ -1,6 +1,6 @@
 import pytest
 import datetime
-from app import db  # Import db from app
+from app import db
 from app.models.user import User
 from app.models.group import Group
 from app.models.expense import Expense
