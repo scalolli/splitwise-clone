@@ -27,5 +27,10 @@ class BaseExpenseForm(FlaskForm):
         if round(split_sum, 2) != round(total, 2):
             self.splits.errors.append("The sum of all splits must equal the total amount.")
             return False
+
+        user_ids = [split_form.user_id.data for split_form in self.splits]
+        if len(user_ids) != len(set(user_ids)):
+            self.splits.errors.append("Each split must have a unique user. Duplicate users found.")
+            return False
         return True
 
