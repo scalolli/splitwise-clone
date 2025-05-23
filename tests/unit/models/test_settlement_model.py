@@ -34,7 +34,8 @@ def test_settlement_model_basic(app, populated_test_db):
         db.session.commit()
         
         # Verify it was saved correctly
-        saved_settlement = Settlement.query.get(settlement.id)
+        from app import db
+        saved_settlement = db.session.get(Settlement, settlement.id)
         assert saved_settlement is not None
         assert saved_settlement.from_user_id == user1.id
         assert saved_settlement.to_user_id == user2.id

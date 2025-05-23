@@ -40,7 +40,8 @@ def test_create_settlement(app, populated_test_db):
         assert settlement.group_id == group.id
         
         # Verify it was saved to the database
-        db_settlement = Settlement.query.get(settlement.id)
+        from app import db
+        db_settlement = db.session.get(Settlement, settlement.id)
         assert db_settlement is not None
 
 def test_get_settlements_for_group(app, populated_test_db):

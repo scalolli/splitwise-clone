@@ -100,7 +100,8 @@ def test_add_member_to_group(client, app, populated_test_db):
         from app.models.group import Group
         from app.models.user import User
         
-        group = Group.query.get(group_id)
+        from app import db
+        group = db.session.get(Group, group_id)
         user3 = User.query.filter_by(username='user3').first()
         
         assert user3 in group.members
@@ -148,7 +149,8 @@ def test_remove_member_from_group(client, app, populated_test_db):
         from app.models.group import Group
         from app.models.user import User
         
-        group = Group.query.get(group_id)
+        from app import db
+        group = db.session.get(Group, group_id)
         user2 = User.query.filter_by(username='user2').first()
         
         assert user2 not in group.members
