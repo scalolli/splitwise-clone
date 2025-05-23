@@ -9,11 +9,11 @@ from app.models.group import Group
 from app.models.expense import Expense
 from app.models.expense_share import ExpenseShare
 from config import Config
-import datetime
+from app.utils.datetime import utcnow
 
 # --- Utility function for UTC now ---
 def now_utc():
-    return datetime.datetime.now(datetime.timezone.utc)
+    return utcnow()
 
 class TestConfig(Config):
     TESTING = True

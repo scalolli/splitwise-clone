@@ -1,11 +1,12 @@
 import datetime
 from app import db
+from app.utils.datetime import utcnow
 
 class Expense(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     description = db.Column(db.String(200), nullable=False)
     amount = db.Column(db.Float, nullable=False)
-    date = db.Column(db.DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc))
+    date = db.Column(db.DateTime, default=utcnow)
     payer_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     group_id = db.Column(db.Integer, db.ForeignKey('group.id'), nullable=False)
     

@@ -1,6 +1,6 @@
 from app import db
 from app.models.settlement import Settlement
-from datetime import datetime
+from app.utils.datetime import utcnow
 from sqlalchemy import or_
 
 class SettlementService:
@@ -23,7 +23,7 @@ class SettlementService:
             to_user_id=to_user_id,
             amount=amount,
             group_id=group_id,
-            created_at=datetime.now()
+            created_at=utcnow()
         )
         
         db.session.add(settlement)

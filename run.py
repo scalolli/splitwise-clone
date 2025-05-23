@@ -1,3 +1,4 @@
+from app.utils.datetime import utcnow
 from app import create_app, db
 from app.models.user import User
 from app.models.group import Group
@@ -33,12 +34,14 @@ def create_sample_data():
         db.session.flush()
         
         # Create groups
-        group1 = Group(name='Apartment', description='Apartment expenses', created_at=datetime.datetime.now(datetime.timezone.utc))
+        # utcnow already imported at module level if needed
+        group1 = Group(name='Apartment', description='Apartment expenses', created_at=utcnow())
         group1.created_by_id = user1.id
         group1.members.append(user1)
         group1.members.append(user2)
         
-        group2 = Group(name='Trip', description='Vacation expenses', created_at=datetime.datetime.now(datetime.timezone.utc))
+        # utcnow already imported at module level if needed
+        group2 = Group(name='Trip', description='Vacation expenses', created_at=utcnow())
         group2.created_by_id = user1.id
         group2.members.append(user1)
         group2.members.append(user2)
@@ -52,7 +55,8 @@ def create_sample_data():
         expense1 = Expense(
             description='Groceries', 
             amount=100.0, 
-            date=datetime.datetime.now(datetime.timezone.utc),
+            # utcnow already imported at module level if needed
+            date=utcnow(),
             payer_id=user1.id,
             group_id=group1.id
         )
@@ -60,7 +64,8 @@ def create_sample_data():
         expense2 = Expense(
             description='Rent', 
             amount=1000.0, 
-            date=datetime.datetime.now(datetime.timezone.utc),
+            # utcnow already imported at module level if needed
+            date=utcnow(),
             payer_id=user2.id,
             group_id=group1.id
         )
@@ -68,7 +73,8 @@ def create_sample_data():
         expense3 = Expense(
             description='Hotel', 
             amount=300.0, 
-            date=datetime.datetime.now(datetime.timezone.utc),
+            # utcnow already imported at module level if needed
+            date=utcnow(),
             payer_id=user1.id,
             group_id=group2.id
         )

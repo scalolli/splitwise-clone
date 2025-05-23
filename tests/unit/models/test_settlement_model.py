@@ -1,5 +1,5 @@
 import pytest
-from datetime import datetime
+from app.utils.datetime import utcnow
 from app import db
 from app.models.user import User
 from app.models.group import Group
@@ -24,7 +24,7 @@ def test_settlement_model_basic(app, populated_test_db):
             to_user_id=user2.id,
             amount=50.0,
             group_id=group.id,
-            created_at=datetime.now()
+            created_at=utcnow()
         )
         db.session.add(settlement)
         db.session.commit()

@@ -3,7 +3,7 @@ from app.models.expense import Expense
 from app.models.expense_share import ExpenseShare
 from app.models.group import Group
 from app import db
-import datetime
+from app.utils.datetime import utcnow
 from app.forms.edit_expense_form import EditExpenseForm
 
 expenses_bp = Blueprint('expenses', __name__)
@@ -49,7 +49,8 @@ def add_expense(group_id):
         expense = Expense(
             description=description,
             amount=amount,
-            date=datetime.datetime.now(datetime.timezone.utc),
+            # utcnow already imported at module level if needed
+            date=utcnow(),
             payer_id=current_user_id,
             group_id=group_id
         )
@@ -176,4 +177,4 @@ def edit_expense(expense_id):
         return redirect(url_for('groups.group', group_id=expense.group_id))
 
     print("Form errors:", form.errors)
-    return render_template('expenses/edit.html', form=form, expense=expense)
+    return render_template('expenses/edit.html', form=form, expense=expense)  

@@ -1,6 +1,6 @@
 from app import db
 import pytest
-from datetime import datetime
+from app.utils.datetime import utcnow
 from app.models.settlement import Settlement
 from app.models.user import User
 from app.models.group import Group
@@ -65,14 +65,14 @@ def test_get_settlements_for_group(app, populated_test_db):
             to_user_id=user2.id,
             amount=25.0,
             group_id=group.id,
-            created_at=datetime.now()
+            created_at=utcnow()
         )
         settlement2 = Settlement(
             from_user_id=user2.id,
             to_user_id=user1.id,
             amount=15.0,
             group_id=group.id,
-            created_at=datetime.now()
+            created_at=utcnow()
         )
         db.session.add_all([settlement1, settlement2])
         db.session.commit()
@@ -112,14 +112,14 @@ def test_get_settlements_for_user(app, populated_test_db):
             to_user_id=user2.id,
             amount=30.0,
             group_id=group.id,
-            created_at=datetime.now()
+            created_at=utcnow()
         )
         settlement2 = Settlement(
             from_user_id=user3.id,
             to_user_id=user1.id,
             amount=20.0,
             group_id=group.id,
-            created_at=datetime.now()
+            created_at=utcnow()
         )
         # Create a settlement not involving user1
         settlement3 = Settlement(
@@ -127,7 +127,7 @@ def test_get_settlements_for_user(app, populated_test_db):
             to_user_id=user3.id,
             amount=10.0,
             group_id=group.id,
-            created_at=datetime.now()
+            created_at=utcnow()
         )
         db.session.add_all([settlement1, settlement2, settlement3])
         db.session.commit()

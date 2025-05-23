@@ -1,5 +1,6 @@
 import pytest
 import datetime
+from app.utils.datetime import utcnow
 from app import db
 from app.models.user import User
 from app.models.group import Group
@@ -31,7 +32,7 @@ def test_calculate_balances_equal_split(app):
         expense = Expense(
             description="Test Expense",
             amount=100.0,
-            date=datetime.datetime.now(datetime.timezone.utc),
+            date=utcnow(),
             payer_id=user1.id,
             group_id=group.id
         )
@@ -80,7 +81,7 @@ def test_calculate_balances_custom_split(empty_db_session):
     expense = Expense(
         description="Test Expense",
         amount=100.0,
-        date=datetime.datetime.now(datetime.timezone.utc),
+        date=utcnow(),
         payer_id=user1.id,
         group_id=group.id
     )
@@ -125,7 +126,7 @@ def test_calculate_balances_multiple_expenses(empty_db_session):
     expense1 = Expense(
         description="Expense 1",
         amount=100.0,
-        date=datetime.datetime.now(datetime.timezone.utc),
+        date=utcnow(),
         payer_id=user1.id,
         group_id=group.id
     )
@@ -141,7 +142,7 @@ def test_calculate_balances_multiple_expenses(empty_db_session):
     expense2 = Expense(
         description="Expense 2",
         amount=60.0,
-        date=datetime.datetime.now(datetime.timezone.utc),
+        date=utcnow(),
         payer_id=user2.id,
         group_id=group.id
     )

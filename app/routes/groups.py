@@ -4,6 +4,7 @@ from app.models.user import User
 from app import db
 import datetime
 from app.services.balance_service import calculate_balances
+from app.utils.datetime import utcnow
 
 groups_bp = Blueprint('groups', __name__)
 
@@ -59,7 +60,8 @@ def create_group():
             new_group = Group(
                 name=name,
                 description=description,
-                created_at=datetime.datetime.now(datetime.timezone.utc),
+                # utcnow already imported at module level if needed
+                created_at=utcnow(),
                 created_by_id=session['user_id']
             )
             
