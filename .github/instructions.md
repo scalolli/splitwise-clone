@@ -1,3 +1,8 @@
+## Testing Policy
+- All new features, bug fixes, or validations must be accompanied by corresponding unit or functional tests.
+- Tests should be written before implementing or modifying application code (Test-Driven Development).
+- No code changes should be made without first creating or updating relevant tests.
+
 ## Current Implementation Status
 
 ### Completed Features
