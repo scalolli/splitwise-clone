@@ -106,6 +106,38 @@ def test_payer_must_be_among_split_users(form_class, app):
         assert 'splits' in form.errors, "Expected error on splits field."
         assert any('payer' in msg.lower() for msg in form.errors['splits']), "Expected error message about payer in splits."
 
+@pytest.mark.parametrize("form_class", [EditExpenseForm, AddExpenseForm])
+def test_split_user_must_be_group_member(form_class, app):
+    """Test that the form is invalid if a split user is not a group member (not in user choices)."""
+    with app.app_context():
+        formdata = MultiDict({
+            'description': 'Test Expense',
+            'amount': 100,
+            'payer_id': 1,
+            'splits-0-user_id': 1,
+            'splits-0-amount': 60,
+            'splits-1-user_id': 3,  # Not in user_choices
+            'splits-1-amount': 40
+        })
+        form = form_class(formdata)
+        user_choices = [(1, 'user1'), (2, 'user2')]
+        patch_user_choices(form, user_choices)
+        valid = form.validate()
+        assert not valid, "Form should not validate if a split user is not a group member."
+        assert 'splits' in form.errors, "Expected error on splits field."
+        # Flatten possible nested error dicts/lists and check for expected message
+        def flatten_errors(errors):
+            if isinstance(errors, dict):
+                for v in errors.values():
+                    yield from flatten_errors(v)
+            elif isinstance(errors, list):
+                for v in errors:
+                    yield from flatten_errors(v)
+            elif isinstance(errors, str):
+                yield errors
+        flat_errors = list(flatten_errors(form.errors['splits']))
+        assert any('not a valid choice' in msg.lower() or 'not a member' in msg.lower() for msg in flat_errors), "Expected error message about split user not being a group member."
+
 def patch_user_choices(form, user_choices):
     form.payer_id.choices = user_choices
     if hasattr(form, 'splits'):
