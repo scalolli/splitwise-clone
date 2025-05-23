@@ -4,7 +4,7 @@ from app.models.user import User
 from app.models.group import Group
 
 @pytest.fixture
-def client():
+def client(app):
     app = create_app()
     app.config['TESTING'] = True
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
