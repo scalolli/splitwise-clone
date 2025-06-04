@@ -20,6 +20,9 @@ class BaseExpenseForm(FlaskForm):
 
     def validate(self, extra_validators=None):
         rv = super().validate(extra_validators)
+
+        print("Splits got from UI are: ", {self.splits[i].user_id.data: self.splits[i].amount.data for i in range(len(self.splits))})
+
         if not rv:
             return False
         total = self.amount.data or 0

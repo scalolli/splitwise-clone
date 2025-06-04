@@ -108,35 +108,24 @@ def edit_expense(expense_id):
             split_form.user_id.data = share.user_id
             split_form.amount.data = share.amount
             split_form.user_id.choices = [(user.id, user.username) for user in expense.group.members]
-    
-    for entry in form.splits.entries:
-        # Set choices for each split entry
-        print("Setting choices for split entry:", entry.data)
 
-    if form.validate_on_submit():
-        # Update expense details
-        print("Saving expense:", form.description.data, form.amount.data, form.date.data, form.payer_id.data)
-        expense.description = form.description.data
-        expense.amount = form.amount.data
-        expense.date = form.date.data
-        expense.payer_id = form.payer_id.data
-
-        # Update expense splits
-        db.session.execute(
-            db.delete(ExpenseShare).where(ExpenseShare.expense_id == expense.id)
-        )
-        for split in form.splits.data:
-            new_share = ExpenseShare(
-                expense_id=expense.id,
-                user_id=split['user_id'],
-                amount=split['amount']
+    if request.method == 'POST':
+        if form.validate_on_submit():
+            expense.description = form.description.data
+            expense.amount = form.amount.data
+            expense.date = form.date.data
+            expense.payer_id = form.payer_id.data
+            db.session.execute(
+                db.delete(ExpenseShare).where(ExpenseShare.expense_id == expense.id)
             )
-            db.session.add(new_share)
-
-        db.session.commit()
-        flash('Expense updated successfully!', 'success')
-        return redirect(url_for('groups.group', group_id=expense.group_id))
-
-    print("Form errors:", form.errors)
+            for split in form.splits.data:
+                new_share = ExpenseShare(
+                    expense_id=expense.id,
+                    user_id=split['user_id'],
+                    amount=split['amount']
+                )
+                db.session.add(new_share)
+            db.session.commit()
+            flash('Expense updated successfully!', 'success')
+            return redirect(url_for('groups.group', group_id=expense.group_id))
     return render_template('expenses/edit.html', form=form, expense=expense)
-
