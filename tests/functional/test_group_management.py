@@ -199,3 +199,60 @@ def test_group_edit_denied_for_non_creator(client, app):
     response = client.get(f'/group/{group_id}/edit', follow_redirects=True)
     assert b'You do not have permission to edit this group' in response.data
     assert response.status_code == 200
+
+def test_edit_group_add_member(client, app):
+    """Test that the group creator can add a member via the edit group page"""
+    # Login as group creator and create a group
+    client.post('/login', data={'username': 'user1', 'password': 'password'})
+    client.post('/group/create', data={'name': 'EditMembers Group', 'description': 'desc'})
+    with app.app_context():
+        from app.models.group import Group
+        group = Group.query.filter_by(name='EditMembers Group').first()
+        group_id = group.id
+    # Add user3 via edit group page
+    response = client.post(f'/group/{group_id}/edit', data={
+        'name': 'EditMembers Group',
+        'description': 'desc',
+        'add_member_username': 'user3'
+    }, follow_redirects=True)
+    assert b'Member user3 added successfully' in response.data
+    # Check DB
+    with app.app_context():
+        group = db.session.get(Group, group_id)
+        from app.models.user import User
+        user3 = User.query.filter_by(username='user3').first()
+        assert user3 in group.members
+    # Try adding a non-existent user
+    response = client.post(f'/group/{group_id}/edit', data={
+        'name': 'EditMembers Group',
+        'description': 'desc',
+        'add_member_username': 'nouser'
+    }, follow_redirects=True)
+    assert b'User not found' in response.data
+    # Try adding an existing member
+    response = client.post(f'/group/{group_id}/edit', data={
+        'name': 'EditMembers Group',
+        'description': 'desc',
+        'add_member_username': 'user3'
+    }, follow_redirects=True)
+    assert b'User is already a member' in response.data
+
+def test_edit_group_add_member_denied_for_non_creator(client, app):
+    """Test that non-creators cannot add members via the edit group page"""
+    # Login as creator and create group
+    client.post('/login', data={'username': 'user1', 'password': 'password'})
+    client.post('/group/create', data={'name': 'NoAdd Group', 'description': 'desc'})
+    with app.app_context():
+        from app.models.group import Group
+        group = Group.query.filter_by(name='NoAdd Group').first()
+        group_id = group.id
+    client.get('/logout')
+    # Login as non-creator
+    client.post('/login', data={'username': 'user2', 'password': 'password'})
+    # Try to add a member
+    response = client.post(f'/group/{group_id}/edit', data={
+        'name': 'NoAdd Group',
+        'description': 'desc',
+        'add_member_username': 'user3'
+    }, follow_redirects=True)
+    assert b'You do not have permission to edit this group' in response.data

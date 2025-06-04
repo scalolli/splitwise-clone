@@ -163,7 +163,20 @@ def edit_group(group_id):
     if form.validate_on_submit():
         group.name = form.name.data
         group.description = form.description.data
-        db.session.commit()
-        flash('Group updated successfully', 'success')
-        return redirect(url_for('groups.group', group_id=group_id))
+        add_username = form.add_member_username.data.strip() if form.add_member_username.data else None
+        if add_username:
+            user = db.session.execute(db.select(User).filter_by(username=add_username)).scalar_one_or_none()
+            if not user:
+                flash('User not found', 'error')
+            elif user in group.members:
+                flash('User is already a member', 'info')
+            else:
+                group.members.append(user)
+                db.session.commit()
+                flash(f'Member {user.username} added successfully', 'success')
+                return redirect(url_for('groups.edit_group', group_id=group_id))
+        else:
+            db.session.commit()
+            flash('Group updated successfully', 'success')
+            return redirect(url_for('groups.group', group_id=group_id))
     return render_template('edit_group.html', form=form, group=group)
