@@ -21,3 +21,32 @@ def test_edit_expense_navigation(client, populated_test_db):
     response = client.get(edit_url)
     assert response.status_code == 200
     assert b"Edit Expense" in response.data
+
+def test_edit_group_button_visible_to_creator(client, populated_test_db):
+    """Test that the Edit Group button is visible to the group creator on the group detail page."""
+    group_id = populated_test_db['groups']['apartment'].id
+    # Log in as the group creator
+    client.post('/login', data={
+        'username': 'user1',
+        'password': 'password'
+    })
+    response = client.get(f'/group/{group_id}')
+    assert response.status_code == 200
+    # The edit group button should be present
+    assert f'/group/{group_id}/edit'.encode() in response.data
+    assert b'Edit Group' in response.data
+    client.get('/logout')
+
+def test_edit_group_button_not_visible_to_non_creator(client, populated_test_db):
+    """Test that the Edit Group button is NOT visible to non-creators on the group detail page."""
+    group_id = populated_test_db['groups']['apartment'].id
+    # Log in as a non-creator
+    client.post('/login', data={
+        'username': 'user2',
+        'password': 'password'
+    })
+    response = client.get(f'/group/{group_id}')
+    assert response.status_code == 200
+    # The edit group button should NOT be present
+    assert f'/group/{group_id}/edit'.encode() not in response.data
+    assert b'Edit Group' not in response.data

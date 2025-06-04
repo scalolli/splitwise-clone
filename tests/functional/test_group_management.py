@@ -154,3 +154,48 @@ def test_remove_member_from_group(client, app, populated_test_db):
         
         assert user2 not in group.members        
         assert user2 not in group.members
+
+def test_group_edit_by_creator(client, app):
+    """Test that the group creator can edit group details"""
+    # Login as group creator
+    client.post('/login', data={'username': 'user1', 'password': 'password'})
+    # Create a group
+    client.post('/group/create', data={'name': 'Edit Group', 'description': 'Original desc'})
+    # Get group id
+    with app.app_context():
+        from app.models.group import Group
+        group = Group.query.filter_by(name='Edit Group').first()
+        group_id = group.id
+    # Access edit page
+    response = client.get(f'/group/{group_id}/edit')
+    assert response.status_code == 200
+    assert b'Edit Group' in response.data
+    # Submit edit form
+    response = client.post(f'/group/{group_id}/edit', data={
+        'name': 'Edited Group',
+        'description': 'Updated desc'
+    }, follow_redirects=True)
+    assert b'Group updated successfully' in response.data
+    assert b'Edited Group' in response.data
+    # Check DB
+    with app.app_context():
+        group = db.session.get(Group, group_id)
+        assert group.name == 'Edited Group'
+        assert group.description == 'Updated desc'
+
+def test_group_edit_denied_for_non_creator(client, app):
+    """Test that non-creators cannot access the edit group page"""
+    # Login as creator and create group
+    client.post('/login', data={'username': 'user1', 'password': 'password'})
+    client.post('/group/create', data={'name': 'NoEdit Group', 'description': 'desc'})
+    with app.app_context():
+        from app.models.group import Group
+        group = Group.query.filter_by(name='NoEdit Group').first()
+        group_id = group.id
+    # Logout and login as another user
+    client.get('/logout')
+    client.post('/login', data={'username': 'user2', 'password': 'password'})
+    # Try to access edit page
+    response = client.get(f'/group/{group_id}/edit', follow_redirects=True)
+    assert b'You do not have permission to edit this group' in response.data
+    assert response.status_code == 200

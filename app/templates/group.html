@@ -65,5 +65,11 @@
     {% else %}
     <p>No expenses yet.</p>
     {% endif %}
+
+    {% if session.get('user_id') == group.created_by_id %}
+    <div class="actions">
+        <a href="{{ url_for('groups.edit_group', group_id=group.id) }}" class="btn btn-secondary">Edit Group</a>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}

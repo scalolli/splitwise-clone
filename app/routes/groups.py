@@ -5,6 +5,7 @@ from app import db
 import datetime
 from app.services.balance_service import calculate_balances
 from app.utils.datetime import utcnow
+from app.forms.edit_group_form import EditGroupForm
 
 groups_bp = Blueprint('groups', __name__)
 
@@ -146,3 +147,23 @@ def remove_member(group_id, user_id):
     
     flash('Member removed successfully', 'success')
     return redirect(url_for('groups.group', group_id=group_id))
+
+@groups_bp.route('/group/<int:group_id>/edit', methods=['GET', 'POST'])
+def edit_group(group_id):
+    if 'user_id' not in session:
+        flash('Please log in to access this page', 'error')
+        return redirect(url_for('auth.login'))
+    group = db.session.get(Group, group_id)
+    if not group:
+        abort(404)
+    if group.created_by_id != session['user_id']:
+        flash('You do not have permission to edit this group', 'error')
+        return redirect(url_for('groups.group', group_id=group_id))
+    form = EditGroupForm(obj=group)
+    if form.validate_on_submit():
+        group.name = form.name.data
+        group.description = form.description.data
+        db.session.commit()
+        flash('Group updated successfully', 'success')
+        return redirect(url_for('groups.group', group_id=group_id))
+    return render_template('edit_group.html', form=form, group=group)
