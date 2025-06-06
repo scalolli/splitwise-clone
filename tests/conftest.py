@@ -10,6 +10,7 @@ from app.models.expense import Expense
 from app.models.expense_share import ExpenseShare
 from config import Config
 from app.utils.datetime import utcnow
+import subprocess
 
 # --- Utility function for UTC now ---
 def now_utc():
@@ -19,7 +20,7 @@ class TestConfig(Config):
     TESTING = True
     SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
     WTF_CSRF_ENABLED = False
-    SERVER_NAME = 'localhost.localdomain'
+    SERVER_NAME = 'localhost'
 
 @pytest.fixture(scope='session')
 def app():
@@ -114,3 +115,7 @@ def empty_db_session(app):
         db.create_all()
         yield db.session
         _cleanup_db()
+
+def pytest_configure(config):
+    # Ensure Playwright browsers are installed before any tests run
+    subprocess.run(["python", "-m", "playwright", "install", "--with-deps"], check=True)
