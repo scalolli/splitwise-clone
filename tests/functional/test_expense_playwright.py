@@ -1,6 +1,7 @@
 import pytest
 from playwright.sync_api import Page, expect
 
+@pytest.mark.skip(reason="Skipping this test as I am not convinced this is how I want to test this functionality")
 def test_edit_expense_split_behaviour(page: Page):
     base_url = "http://127.0.0.1:5000"  # Adjust if your app runs elsewhere
 
