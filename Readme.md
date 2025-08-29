@@ -1,8 +1,6 @@
 # Splitwise Clone
 
-[![Test Suite](https://github.com/basavarajkalloli/splitwise-fresh/actions/workflows/test.yml/badge.svg)](https://github.com/basavarajkalloli/splitwise-fresh/actions/workflows/test.yml)
-[![codecov](https://codecov.io/gh/basavarajkalloli/splitwise-fresh/branch/main/graph/badge.svg)](https://codecov.io/gh/basavarajkalloli/splitwise-fresh)
-
+[![Test Suite](https://github.com/scalolli/splitwise-clone/actions/workflows/test.yml/badge.svg)](https://github.com/scalolli/splitwise-clone/actions/workflows/test.yml)
 A comprehensive expense sharing application built with Flask and SQLAlchemy, inspired by Splitwise.
 
 ## Features
