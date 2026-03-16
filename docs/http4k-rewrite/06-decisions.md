@@ -257,3 +257,36 @@ This reduces drift between tests and production while keeping setup reproducible
 **Rejected alternatives:**
 - In-memory SQLite or H2: too much behavior drift from PostgreSQL.
 - Shared long-running local database: brittle, stateful, and harder for agents to run safely.
+
+---
+
+## ADR-016 — Testcontainers singleton with `freshDatabase()` for test isolation
+
+**Status:** Locked
+
+**Decision:** A single `PostgreSQLContainer` is started once per JVM via a Kotlin `object`
+with `lazy` initialization (`PostgresTestSupport`). Each test calls `freshDatabase()` which
+creates a UUID-named database, connects, and runs Flyway migrations — returning a
+ready-to-use `Database`. Tests never share database state.
+
+`docker-compose.yml` exists separately for running the application locally with a persistent
+database. It is not used by the test suite.
+
+**`freshConfig()` is preserved** for tests that need to verify Flyway behaviour directly
+(e.g., `DatabaseIntegrationSmokeTest`). All other tests use `freshDatabase()`.
+
+**Rationale:**
+- One container start per JVM avoids repeated Docker pull/start overhead while keeping
+  complete isolation between tests via separate named databases.
+- `freshDatabase()` removes boilerplate from every repository test — connect + migrate is
+  done once in one place.
+- Docker Compose for local dev and Testcontainers for automated tests serve different
+  purposes; conflating them would make tests depend on external state.
+
+**Rejected alternatives:**
+- Docker Compose for tests: requires "did you start Compose?" discipline; breaks CI
+  without extra setup steps; shared state between test runs unless manually cleaned.
+- One container per test class: slower startup; offers no isolation benefit over
+  per-test UUID databases on a shared container.
+- Truncating tables between tests: fragile; requires enumerating tables; breaks if a new
+  table is added without updating the truncation list.

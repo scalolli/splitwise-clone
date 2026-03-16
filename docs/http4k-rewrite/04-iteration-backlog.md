@@ -10,7 +10,7 @@ explicitly marked as optional.
 
 ## Phase 0 — Foundation
 
-### SLICE-001 — Gradle project scaffold `todo`
+### SLICE-001 — Gradle project scaffold `done`
 **Outcome:** The root Gradle project compiles with a `GET /health` endpoint.
 
 Tests to write first:
@@ -29,7 +29,7 @@ Done when:
 
 ---
 
-### SLICE-002 — Kotlin CI pipeline `todo`
+### SLICE-002 — Kotlin CI pipeline `done`
 **Outcome:** GitHub Actions runs Kotlin build and tests on every push.
 
 Tests to write first:
@@ -43,7 +43,7 @@ Done when:
 
 ---
 
-### SLICE-002A — Postgres test infrastructure `todo`
+### SLICE-002A — Postgres test infrastructure `done`
 **Outcome:** DB-backed tests run against disposable PostgreSQL containers locally and in CI.
 
 Tests to write first:
@@ -63,7 +63,7 @@ Done when:
 
 ## Phase 1 — Domain model
 
-### SLICE-003 — Money value object `todo`
+### SLICE-003 — Money value object `done`
 **Outcome:** `Money` is a type-safe, `BigDecimal`-backed value object with arithmetic.
 
 Tests to write first:
@@ -80,7 +80,7 @@ Done when: all unit tests pass, no framework imports.
 
 ---
 
-### SLICE-004 — Core domain entities `todo`
+### SLICE-004 — Core domain entities `done`
 **Outcome:** `User`, `Group`, `Expense`, `ExpenseShare`, `Settlement` defined as
 plain data classes with typed IDs.
 
@@ -97,7 +97,7 @@ Done when: all entity and ID tests pass, zero external dependencies.
 
 ---
 
-### SLICE-005 — Balance calculator `todo`
+### SLICE-005 — Balance calculator `done`
 **Outcome:** `BalanceCalculator` correctly computes net pairwise balances from
 expenses and subtracts settlements.
 
@@ -116,7 +116,7 @@ Done when: all unit tests pass.
 
 ---
 
-### SLICE-006 — Expense validator `todo`
+### SLICE-006 — Expense validator `done`
 **Outcome:** `ExpenseValidator` enforces all 7 validation rules with exact error messages.
 
 Tests to write first (one test per rule):
@@ -139,7 +139,7 @@ Done when: all validation tests pass with exact error message strings.
 
 ## Phase 2 — Persistence
 
-### SLICE-007 — Database setup and Flyway `todo`
+### SLICE-007 — Database setup and Flyway `done`
 **Outcome:** Flyway manages the schema; a `Database` object provides transaction support.
 
 Tests to write first:

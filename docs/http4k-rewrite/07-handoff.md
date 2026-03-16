@@ -7,49 +7,34 @@ The next agent (or human) picks up exactly from "Next action".
 
 ## Current state
 
-The root Gradle project exists with a working `GET /health` endpoint and a dedicated
-Kotlin GitHub Actions workflow. The pure domain layer now includes `Money`, typed core
-entities, `BalanceCalculator`, and `ExpenseValidator`, all covered by unit tests. The
-project now also has shared PostgreSQL Testcontainers wiring plus Flyway/Exposed-backed
-database bootstrap and initial schema coverage. The docs remain aligned to a
-server-rendered PWA backed by centrally hosted PostgreSQL.
+**What exists and is working:**
 
-## What was done
+| Area | Files | Status |
+|---|---|---|
+| HTTP server | `src/main/kotlin/com/splitwise/App.kt`, `web/SplitwiseApp.kt`, `web/HealthHandler.kt` | `GET /health` returns `{"status":"ok"}` |
+| Domain model | `domain/Money.kt`, `UserId`, `GroupId`, `ExpenseId`, `SettlementId`, `User`, `Group`, `Expense`, `ExpenseShare`, `Settlement` | All unit tested, zero dependencies |
+| Business logic | `domain/BalanceCalculator.kt`, `domain/ExpenseValidator.kt` | Fully unit tested |
+| Database layer | `persistence/Database.kt`, `persistence/Tables.kt` | Wraps Exposed DSL + Flyway; provides `connect()`, `migrate()`, `transaction {}` |
+| Schema | `src/main/resources/db/migration/V1__initial_schema.sql` | 6 tables: `users`, `groups`, `group_members`, `expenses`, `expense_shares`, `settlements` |
+| Test infrastructure | `test/persistence/PostgresTestSupport.kt` | Singleton Testcontainers container; `freshConfig()` for raw DB config; `freshDatabase()` for a migrated `Database` ready for repository tests |
+| DB smoke tests | `test/persistence/DatabaseIntegrationSmokeTest.kt` | Verifies connection and Flyway idempotency |
+| CI | `.github/workflows/kotlin.yml` | Runs `./gradlew test` on `ubuntu-latest` (Docker available); green |
+| Local dev DB | `docker-compose.yml` | `docker compose up -d` starts Postgres on `5432`; credentials `splitwise/splitwise/splitwise` |
 
-- Established the Kotlin/http4k implementation direction
-- Wrote `docs/http4k-rewrite/` documentation suite:
-  - `README.md` — index and ground rules
-  - `00-charter.md` — scope, principles, success criteria
-  - `01-target-architecture.md` — package layout, tech stack, dependency rules
-  - `02-behavior-spec.md` — route-by-route spec, auth matrix, validation rules
-  - `03-roadmap.md` — 10 phases with exit criteria
-  - `04-iteration-backlog.md` — 27 slices (SLICE-001 to SLICE-027) in dependency order
-  - `05-testing-strategy.md` — test pyramid, naming, isolation rules
-  - `06-decisions.md` — 13 locked ADRs
-  - `07-handoff.md` — this file
-- Updated `.github/instructions.md` — replaced old migration plan with pointer to docs
-- Updated `Readme.md` — added rewrite section pointing to docs
-- Completed `SLICE-001` — root Gradle scaffold with health endpoint
-- Completed `SLICE-002` — Kotlin GitHub Actions workflow
-- Completed `SLICE-003` — `Money` value object
-- Completed `SLICE-004` — core domain entities with typed IDs
-- Completed `SLICE-005` — `BalanceCalculator` with settlement-aware netting
-- Completed `SLICE-006` — `ExpenseValidator` and `ValidationResult`
-- Completed `SLICE-002A` — PostgreSQL Testcontainers support and DB smoke tests
-- Completed `SLICE-007` — Flyway-backed database bootstrap, schema migration, and tables
-- Tightened DB-backed tests so missing Docker now fails the suite instead of skipping coverage
-- Revised the architecture docs to use PostgreSQL, server-rendered PWA delivery, and
-  containerized Postgres for DB-backed tests
+**Not yet started:** service layer, repository implementations, all HTTP handlers beyond `/health`, Handlebars templates, BCrypt auth, session filter, PWA assets.
+
+---
 
 ## Next action
 
 **Start SLICE-008: User repository.**
 
-1. Read `docs/http4k-rewrite/04-iteration-backlog.md` SLICE-008 in full.
-2. Add failing repository integration tests for save/find-by-id/find-by-username/find-by-email.
-3. Add the duplicate-username constraint test against disposable PostgreSQL.
-4. Implement `UserRepository` against the shared `Database` and `UsersTable` wiring.
-5. Keep `./gradlew test` green and commit the slice.
+1. Read SLICE-008 in `04-iteration-backlog.md`.
+2. Use `PostgresTestSupport.freshDatabase()` — it gives you a migrated `Database` with schema applied. Do not call `freshConfig()` + `connect()` + `migrate()` manually in repo tests.
+3. Write failing tests first: save → find-by-id, find-by-username (exists/missing), find-by-email (exists/missing), duplicate username constraint.
+4. Implement `src/main/kotlin/com/splitwise/persistence/UserRepository.kt` against `Database` and the `UsersTable` already defined in `Tables.kt`.
+5. Run `./gradlew test` — all tests must be green before committing.
+6. Commit: `feat: add user repository`.
 
 ## Slice status
 
