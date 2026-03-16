@@ -16,6 +16,7 @@ The next agent (or human) picks up exactly from "Next action".
 | Business logic | `domain/BalanceCalculator.kt`, `domain/ExpenseValidator.kt` | Fully unit tested |
 | Database layer | `persistence/Database.kt`, `persistence/Tables.kt` | Wraps Exposed DSL + Flyway; provides `connect()`, `migrate()`, `transaction {}` |
 | Schema | `src/main/resources/db/migration/V1__initial_schema.sql` | 6 tables: `users`, `groups`, `group_members`, `expenses`, `expense_shares`, `settlements` |
+| User repository | `persistence/UserRepository.kt` | `save`, `findById`, `findByUsername`, `findByEmail`; all tests pass |
 | Test infrastructure | `test/persistence/PostgresTestSupport.kt` | Singleton Testcontainers container; `freshConfig()` for raw DB config; `freshDatabase()` for a migrated `Database` ready for repository tests |
 | DB smoke tests | `test/persistence/DatabaseIntegrationSmokeTest.kt` | Verifies connection and Flyway idempotency |
 | CI | `.github/workflows/kotlin.yml` | Runs `./gradlew test` on `ubuntu-latest` (Docker available); green |
@@ -27,14 +28,14 @@ The next agent (or human) picks up exactly from "Next action".
 
 ## Next action
 
-**Start SLICE-008: User repository.**
+**Start SLICE-009: Group repository.**
 
-1. Read SLICE-008 in `04-iteration-backlog.md`.
-2. Use `PostgresTestSupport.freshDatabase()` — it gives you a migrated `Database` with schema applied. Do not call `freshConfig()` + `connect()` + `migrate()` manually in repo tests.
-3. Write failing tests first: save → find-by-id, find-by-username (exists/missing), find-by-email (exists/missing), duplicate username constraint.
-4. Implement `src/main/kotlin/com/splitwise/persistence/UserRepository.kt` against `Database` and the `UsersTable` already defined in `Tables.kt`.
+1. Read SLICE-009 in `04-iteration-backlog.md`.
+2. Use `PostgresTestSupport.freshDatabase()` for all persistence tests.
+3. Write failing tests first: create group → find by ID, add member → member appears, remove member, idempotent add, find all groups.
+4. Implement `src/main/kotlin/com/splitwise/persistence/GroupRepository.kt` against `Database`, `GroupsTable`, and `GroupMembersTable` defined in `Tables.kt`.
 5. Run `./gradlew test` — all tests must be green before committing.
-6. Commit: `feat: add user repository`.
+6. Commit: `feat: add group repository`.
 
 ## Slice status
 
@@ -48,7 +49,7 @@ The next agent (or human) picks up exactly from "Next action".
 | SLICE-005 | Balance calculator | `done` |
 | SLICE-006 | Expense validator | `done` |
 | SLICE-007 | Database setup and Flyway | `done` |
-| SLICE-008 | User repository | `todo` |
+| SLICE-008 | User repository | `done` |
 | SLICE-009 | Group repository | `todo` |
 | SLICE-010 | Expense repository | `todo` |
 | SLICE-011 | Settlement repository | `todo` |
