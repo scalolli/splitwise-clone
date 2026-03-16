@@ -11,7 +11,7 @@ explicitly marked as optional.
 ## Phase 0 — Foundation
 
 ### SLICE-001 — Gradle project scaffold `todo`
-**Outcome:** `kotlin-app/` exists and compiles with a `GET /health` endpoint.
+**Outcome:** The root Gradle project compiles with a `GET /health` endpoint.
 
 Tests to write first:
 - `HealthCheckTest`: `GET /health` returns `200 OK` with body `{"status":"ok"}`
@@ -37,7 +37,6 @@ Tests to write first:
 
 Implementation:
 - `.github/workflows/kotlin.yml` — runs `./gradlew test` on `ubuntu-latest`
-- Separate from the Python workflow
 
 Done when:
 - Push to `main` triggers Kotlin CI and it passes

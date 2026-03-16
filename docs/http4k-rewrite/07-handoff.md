@@ -7,14 +7,12 @@ The next agent (or human) picks up exactly from "Next action".
 
 ## Current state
 
-All planning documentation is written and committed. No Kotlin code exists yet.
-The `kotlin-app/` directory does not exist.
+The root Gradle project exists with a working `GET /health` endpoint and a dedicated
+Kotlin GitHub Actions workflow.
 
-## What was done (planning sessions)
+## What was done
 
-- Critically reviewed the old migration plan in `.github/instructions.md`
-- Chose "clean rewrite with selective fixes" as the approach
-- Identified all known Python bugs to fix (see `00-charter.md` fix table)
+- Established the Kotlin/http4k implementation direction
 - Wrote `docs/http4k-rewrite/` documentation suite:
   - `README.md` — index and ground rules
   - `00-charter.md` — scope, principles, success criteria
@@ -27,26 +25,25 @@ The `kotlin-app/` directory does not exist.
   - `07-handoff.md` — this file
 - Updated `.github/instructions.md` — replaced old migration plan with pointer to docs
 - Updated `Readme.md` — added rewrite section pointing to docs
+- Completed `SLICE-001` — root Gradle scaffold with health endpoint
+- Completed `SLICE-002` — Kotlin GitHub Actions workflow
 
 ## Next action
 
-**Start SLICE-001: Gradle project scaffold.**
+**Start SLICE-003: Money value object.**
 
-1. Read `docs/http4k-rewrite/04-iteration-backlog.md` SLICE-001 entry in full.
-2. Create `kotlin-app/` directory structure.
-3. Write the failing test first: `HealthCheckTest` — `GET /health` returns `200 OK`
-   with body `{"status":"ok"}`.
-4. Write minimal implementation to make it pass.
-5. Verify: `./gradlew test` passes, `./gradlew run` boots.
-6. Commit: `feat: SLICE-001 Gradle scaffold with health endpoint`.
-7. Update this file: mark SLICE-001 done, set next action to SLICE-002.
+1. Read `docs/http4k-rewrite/04-iteration-backlog.md` SLICE-003 entry in full.
+2. Write the failing `Money` tests first.
+3. Implement the minimal `Money` value object.
+4. Verify `./gradlew test` passes.
+5. Commit the green slice.
 
 ## Slice status
 
 | Slice | Title | Status |
 |---|---|---|
-| SLICE-001 | Gradle project scaffold | `todo` |
-| SLICE-002 | Kotlin CI pipeline | `todo` |
+| SLICE-001 | Gradle project scaffold | `done` |
+| SLICE-002 | Kotlin CI pipeline | `done` |
 | SLICE-003 | Money value object | `todo` |
 | SLICE-004 | Core domain entities | `todo` |
 | SLICE-005 | Balance calculator | `todo` |
@@ -81,13 +78,11 @@ The `kotlin-app/` directory does not exist.
 | `docs/http4k-rewrite/02-behavior-spec.md` | Auth matrix, validation rules, exact error messages |
 | `docs/http4k-rewrite/04-iteration-backlog.md` | Slice definitions — read before starting any slice |
 | `docs/http4k-rewrite/06-decisions.md` | Locked ADRs — check before making any architectural choice |
-| `app/forms/base_expense_form.py` | Python source of truth for all 7 validation rules |
-| `app/services/balance_service.py` | Shows the settlement gap that must be fixed |
+| `docs/http4k-rewrite/08-functionality-checklist.md` | Consolidated functionality checklist |
 
 ## Non-negotiable rules
 
 - TDD: failing test before any production code. No exceptions.
 - Update this file (07-handoff.md) at the end of every session.
 - New architectural decisions go in `06-decisions.md` before they are implemented.
-- Do not modify anything under `app/`.
 - Commit when a slice is green. One commit per slice minimum.

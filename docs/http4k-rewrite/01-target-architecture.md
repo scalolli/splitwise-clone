@@ -4,28 +4,25 @@
 
 ```
 splitwise-clone/
-├── app/                        # Python/Flask reference app — do not modify
-├── kotlin-app/                 # New http4k app — all Kotlin development lives here
-│   ├── build.gradle.kts
-│   ├── settings.gradle.kts
-│   └── src/
-│       ├── main/kotlin/com/splitwise/
-│       │   ├── App.kt              # Entry point; wires everything together
-│       │   ├── domain/             # Pure domain model — no I/O dependencies
-│       │   ├── persistence/        # Exposed table definitions and repositories
-│       │   ├── service/            # Application services — orchestrate domain + repos
-│       │   ├── web/                # http4k handlers, filters, routing
-│       │   └── config/             # Config loading, dependency wiring
-│       ├── main/resources/
-│       │   ├── db/migration/       # Flyway SQL migration files
-│       │   └── templates/          # Handlebars templates
-│       └── test/kotlin/com/splitwise/
-│           ├── domain/             # Pure unit tests — no DB, no HTTP
-│           ├── persistence/        # Repository integration tests — real SQLite
-│           ├── service/            # Service unit tests — mocked repos
-│           └── web/                # HTTP handler tests — in-process http4k client
-└── docs/
-    └── http4k-rewrite/         # This documentation
+├── build.gradle.kts
+├── settings.gradle.kts
+├── src/
+│   ├── main/kotlin/com/splitwise/
+│   │   ├── App.kt              # Entry point; wires everything together
+│   │   ├── domain/             # Pure domain model — no I/O dependencies
+│   │   ├── persistence/        # Exposed table definitions and repositories
+│   │   ├── service/            # Application services — orchestrate domain + repos
+│   │   ├── web/                # http4k handlers, filters, routing
+│   │   └── config/             # Config loading, dependency wiring
+│   ├── main/resources/
+│   │   ├── db/migration/       # Flyway SQL migration files
+│   │   └── templates/          # Handlebars templates
+│   └── test/kotlin/com/splitwise/
+│       ├── domain/             # Pure unit tests — no DB, no HTTP
+│       ├── persistence/        # Repository integration tests — real SQLite
+│       ├── service/            # Service unit tests — mocked repos
+│       └── web/                # HTTP handler tests — in-process http4k client
+└── docs/http4k-rewrite/        # This documentation
 ```
 
 ## Package responsibilities

@@ -1,10 +1,10 @@
 # http4k Rewrite — Documentation Index
 
 This directory contains the complete plan, specification, and working notes for the
-ground-up Kotlin/http4k rewrite of the Splitwise Clone app.
+Kotlin/http4k implementation of the Splitwise Clone app.
 
-The Python/Flask app in `app/` remains untouched and serves as the behavioral
-reference only. All new development happens in `kotlin-app/`.
+All active development happens at the repository root. The expected behavior is
+captured in these documents, especially the functionality checklist and behavior spec.
 
 ## Read these in order (first time)
 
@@ -27,7 +27,6 @@ and what to read first.
 
 ## Ground rules
 
-- Never modify the Python app to suit the Kotlin rewrite. It is a reference only.
 - Every slice starts with a failing test.
 - Do not move to the next slice until the current one has green tests.
 - When you complete a slice, update `07-handoff.md` before finishing the session.

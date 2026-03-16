@@ -1,10 +1,8 @@
 # Behavior Specification
 
-This document defines what the Kotlin app must do. It is derived from the Python/Flask
-app but is not a transcript of it. Where the Python app has a known bug or design gap,
-the correct behavior is documented here instead.
-
-Consult the Python app source in `app/` to understand context, not to copy implementation.
+This document defines what the Kotlin app must do. It is the user-visible contract for
+the application. Where earlier implementations had known bugs or design gaps, the
+correct behavior is documented here instead.
 
 ---
 
@@ -55,7 +53,7 @@ Consult the Python app source in `app/` to understand context, not to copy imple
 - Shows group name, description, member list
 - Shows all expenses (description, amount, payer, date)
 - Shows calculated balances (who owes whom, net amounts)
-  - **Fix vs Python**: balances subtract any recorded settlements for this group
+  - Balances subtract any recorded settlements for this group
 - 404 if group does not exist
 
 ### Create group
@@ -117,7 +115,7 @@ Consult the Python app source in `app/` to understand context, not to copy imple
 
 ### Edit expense
 - `GET /expenses/{id}/edit` — protected
-  - **Fix vs Python**: user must be the expense payer OR the group creator; others get 403
+  - User must be the expense payer OR the group creator; others get 403
 - `POST /expenses/{id}/edit` — protected; same authorization as GET
   - Same validation rules as add expense
   - On success: splits replaced atomically, redirect to `/group/{id}` with flash
@@ -127,7 +125,7 @@ Consult the Python app source in `app/` to understand context, not to copy imple
 
 ### Delete expense
 - `POST /expenses/{id}/delete` — protected
-  - **New vs Python**: not present in Flask app; implementing from the start
+  - Implemented from the start
   - User must be the expense payer OR the group creator
   - All associated expense shares are deleted (cascade)
   - On success: redirect to `/group/{id}` with flash "Expense deleted"
@@ -144,7 +142,7 @@ Consult the Python app source in `app/` to understand context, not to copy imple
 - Settled amounts reduce the displayed balance
   - If A owes B £20 (net from expenses) and A has settled £15 to B, display is A owes B £5
   - If settled amount equals or exceeds debt, no balance is shown for that pair
-- **Fix vs Python**: Python's `balance_service.py` ignores settlements entirely
+- Balances always include settlements
 
 ---
 

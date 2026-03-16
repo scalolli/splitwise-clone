@@ -1,12 +1,7 @@
 services:
   - type: web
-    name: splitwise-fresh
-    env: python
+    name: splitwise-clone
+    env: java
     plan: free
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: "gunicorn app:app"
-    envVars:
-      - key: FLASK_ENV
-        value: production
-      # Add other environment variables here as needed
-
+    buildCommand: "./gradlew build"
+    startCommand: "./gradlew run"

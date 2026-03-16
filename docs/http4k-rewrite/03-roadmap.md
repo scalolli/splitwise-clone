@@ -9,7 +9,7 @@ the current phase's exit criteria are fully met and tests are green.
 **Goal:** The Kotlin project exists, compiles, and has a working CI pipeline.
 
 ### Work
-- Create `kotlin-app/` with Gradle (Kotlin DSL) and standard project structure
+- Create the root Gradle project with standard Kotlin source structure
 - Add http4k-core, http4k-server-jetty, JUnit 5, http4k test module to `build.gradle.kts`
 - Implement `GET /health` returning `200 OK` with body `{"status":"ok"}`
 - Configure GitHub Actions workflow for Kotlin: build + test on every push
@@ -17,7 +17,7 @@ the current phase's exit criteria are fully met and tests are green.
 
 ### Exit criteria
 - `./gradlew test` passes with a single health check test
-- GitHub Actions runs the Kotlin job alongside the existing Python job
+- GitHub Actions runs the Kotlin job on every push and pull request
 - No Kotlin compiler errors or warnings
 
 ---

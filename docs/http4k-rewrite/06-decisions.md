@@ -6,35 +6,34 @@ without a new entry superseding it.
 
 ---
 
-## ADR-001 — Clean rewrite, not a migration
+## ADR-001 — Clean implementation, not a migration
 
 **Status:** Locked
 
-**Decision:** The Kotlin app is a ground-up rewrite informed by the Python app's behavior,
-not a port or a strangler-fig migration. No Python code is translated line-by-line.
+**Decision:** The Kotlin app is a clean implementation from the documented behavior,
+not a port or a strangler-fig migration. No previous code is translated line-by-line.
 
-**Rationale:** The Python app contains known design mistakes (missing auth check on
-`edit_expense`, float money, settlements not wired into balances). Carrying those forward
-would mean intentionally copying bugs. A clean rewrite lets us fix them without archaeological
-work on the existing codebase.
+**Rationale:** Earlier implementations contained known design mistakes such as missing
+auth checks on `edit_expense`, imprecise money handling, and settlements not wired into
+balances. A clean implementation lets us fix them without carrying forward accidental
+design debt.
 
 **Rejected alternatives:**
 - Strangler-fig: requires shared infrastructure and introduces operational complexity with
   no benefit at this scale.
-- Line-by-line port: copies bugs and produces Kotlin that reads like Python.
+- Line-by-line port: copies bugs and produces Kotlin that reads like a different language.
 
 ---
 
-## ADR-002 — Kotlin app lives in `kotlin-app/`; Python app is untouched
+## ADR-002 — Kotlin app lives at the repository root
 
 **Status:** Locked
 
-**Decision:** All Kotlin source lives under `kotlin-app/` at the repo root. The Python
-`app/` directory is never modified during this rewrite. Both coexist in the same repo.
+**Decision:** All Kotlin source lives at the repository root using the standard Gradle
+project layout.
 
-**Rationale:** Keeping the Python app intact lets us diff behavior at any point. It
-serves as the behavioral spec. Modifying it during the rewrite would destroy that
-reference.
+**Rationale:** The root layout keeps builds, CI, and deployment simple and makes the
+Kotlin application the single active delivery track.
 
 ---
 
@@ -46,10 +45,8 @@ reference.
 rounding). The database column type is `DECIMAL(10,2)`. `Float` and `Double` are
 prohibited for any monetary calculation.
 
-**Rationale:** The Python app stores amounts as `Float`, which is subject to IEEE 754
-rounding errors (e.g., `0.1 + 0.2 ≠ 0.3`). While this hasn't caused visible bugs yet,
-it is a time bomb in a financial application. `BigDecimal` with fixed scale is the
-standard JVM fix.
+**Rationale:** IEEE 754 floating-point values are not suitable for financial calculations.
+`BigDecimal` with fixed scale is the standard JVM fix.
 
 **Rejected alternatives:**
 - `Long` (store pence/cents): correct but requires a currency denomination decision and
@@ -63,11 +60,11 @@ standard JVM fix.
 **Status:** Locked
 
 **Decision:** Flyway manages all schema changes via versioned migration scripts in
-`kotlin-app/src/main/resources/db/migration/`. The application never calls any
+`src/main/resources/db/migration/`. The application never calls any
 equivalent of `db.create_all()` at startup.
 
-**Rationale:** The Python app uses `db.create_all()`, which is not repeatable and
-provides no migration history. Flyway gives us a versioned, auditable migration chain
+**Rationale:** Startup schema creation is not repeatable and provides no migration history.
+Flyway gives us a versioned, auditable migration chain
 that is safe to run in production.
 
 **Rejected alternatives:**
@@ -123,14 +120,12 @@ is signed, so clients cannot tamper with session contents.
 to all protected routes. It reads the session cookie, resolves the `UserId`, and injects
 it into the request as a lens value. Handlers do not perform their own session checks.
 
-**Rationale:** The Python app has manual `if 'user_id' not in session: return redirect('/login')`
-guards scattered across every handler. This is brittle: any new handler that forgets the
-check is silently unauthenticated. A filter applied at the router boundary makes it
-impossible to accidentally add an unguarded protected route.
+**Rationale:** Manual auth guards scattered across handlers are brittle. A filter applied
+at the router boundary makes it impossible to accidentally add an unguarded protected route.
 
 **Rejected alternatives:**
 - Annotating handlers with a `@loginRequired` decorator: Kotlin doesn't support this
-  pattern as cleanly as Python; filter composition at the router level is the http4k idiom.
+  pattern as cleanly; filter composition at the router level is the http4k idiom.
 
 ---
 
@@ -142,10 +137,9 @@ impossible to accidentally add an unguarded protected route.
 expense, or (b) the group's creator. Any other authenticated user receives a 403.
 Unauthenticated requests are redirected to login.
 
-**Rationale:** The Python `edit_expense` route has no authorization check — any
-authenticated user can edit any expense. This is a security gap. The rule "payer or
-group creator" mirrors the pattern used elsewhere in the Python app for other
-creator-only operations, extended to include the payer as a natural owner of their expense.
+**Rationale:** Allowing any authenticated user to edit any expense is a security gap. The
+rule "payer or group creator" reflects the natural ownership model for a financial record
+while preserving administrative override capability.
 
 **Rejected alternatives:**
 - Anyone in the group can edit: too permissive; this is a financial record.
@@ -161,14 +155,11 @@ creator-only operations, extended to include the payer as a natural owner of the
 the list of recorded settlements. Settlements reduce the net balance between pairs of
 users. A fully settled pair shows no balance.
 
-**Rationale:** The Python `BalanceService` computes balances from expenses only.
-`SettlementService` exists but is never called from the balance calculation path. This
-means balances never decrease after a settlement is recorded — the core feature of
-settling debts does not work. This is the most impactful behavioral fix in the rewrite.
+**Rationale:** If balances do not subtract settlements, the core debt-settling workflow
+does not work. Settlement-aware balances are therefore a required behavior.
 
 **Rejected alternatives:**
-- Keep the Python behavior (ignore settlements in balances): rejected; this is a broken
-  feature, not a design decision.
+- Ignore settlements in balances: rejected; this is a broken feature, not a design decision.
 
 ---
 
@@ -177,29 +168,27 @@ settling debts does not work. This is the most impactful behavioral fix in the r
 **Status:** Locked
 
 **Decision:** HTML is rendered server-side using Handlebars via `http4k-template-handlebars`.
-No JavaScript framework is used. Templates live in `kotlin-app/src/main/resources/templates/`.
+No JavaScript framework is used. Templates live in `src/main/resources/templates/`.
 
-**Rationale:** The Python app uses Jinja2, which has comparable semantics to Handlebars
-(variable interpolation, partials, iteration). Handlebars is the best-supported http4k
+**Rationale:** Handlebars provides the server-rendered templating model needed here and is
+the best-supported http4k
 templating option and requires no JavaScript build pipeline.
 
 **Rejected alternatives:**
 - Thymeleaf: works, but adds Spring-ism aesthetics and is heavier.
 - Pebble: less community support for http4k.
-- Client-side rendering (React/Vue): out of scope; adds JavaScript build complexity and
-  diverges from the Python app's architecture.
+- Client-side rendering (React/Vue): out of scope; adds JavaScript build complexity.
 
 ---
 
-## ADR-011 — SQLite for the database (same as Python app)
+## ADR-011 — SQLite for the database
 
 **Status:** Locked
 
-**Decision:** SQLite is the database for the Kotlin app. The Kotlin app uses a separate
-database file from the Python app (`kotlin-app/splitwise.db` or configured via `DB_PATH`).
+**Decision:** SQLite is the database for the Kotlin app. The default local database file
+is `./splitwise.db`, overridable via `DB_PATH`.
 
-**Rationale:** SQLite is the simplest deployable option and is used by the Python app.
-There is no operational benefit to switching databases during a parity rewrite.
+**Rationale:** SQLite is the simplest deployable option for the scope of this application.
 
 **Rejected alternatives:**
 - PostgreSQL: correct production choice but adds Docker or a hosted service as a
@@ -209,7 +198,7 @@ There is no operational benefit to switching databases during a parity rewrite.
 
 ---
 
-## ADR-012 — Expense deletion is implemented (new behavior vs Python app)
+## ADR-012 — Expense deletion is implemented
 
 **Status:** Locked
 
@@ -217,10 +206,8 @@ There is no operational benefit to switching databases during a parity rewrite.
 payer or the group creator may delete. Shares are cascade-deleted. Balances recalculate
 automatically.
 
-**Rationale:** Expense deletion is listed as a "Pending Feature (HIGH PRIORITY)" in
-`.github/instructions.md`. Its absence in the Python app is an acknowledged gap, not a
-deliberate product decision. Implementing it in the Kotlin rewrite is consistent with
-the "fix known gaps" approach declared in the charter.
+**Rationale:** Expense deletion is a necessary part of a usable expense-management flow.
+Implementing it is consistent with the "fix known gaps" approach declared in the charter.
 
 **Authorization rule:** Same as ADR-008 — payer or group creator.
 

@@ -2,39 +2,38 @@
 
 ## What this is
 
-A ground-up rewrite of the Splitwise Clone in Kotlin using http4k. The Python/Flask app
-is the behavioral reference, not a migration source. We are not translating Python to
-Kotlin; we are building the right thing from scratch, informed by what the Python app does.
+A Kotlin/http4k implementation of the Splitwise Clone built from a clean, documented
+behavior contract. We are not translating an older codebase line-by-line; we are
+building the application from the specification in this directory.
 
 ## What this is not
 
-- A line-by-line port of the Flask app
-- A strangler-fig migration (no traffic proxying, no shared database with the Python app)
+- A line-by-line port of an older implementation
+- A strangler-fig migration
 - A feature expansion project — parity first, new features second
 - An excuse to copy known bugs or design mistakes forward
 
 ## Where the new app lives
 
-All Kotlin code lives in `kotlin-app/` at the repo root. The Python app in `app/` is
-never modified during this rewrite. Both coexist in the same repo but are completely
-independent.
+The Kotlin application lives at the repository root using the standard Gradle project
+layout.
 
 ## Rewrite approach: clean rewrite with selective fixes
 
-We preserve the intended user-visible behavior of the Python app, but we deliberately
-fix the following known problems instead of copying them:
+We preserve the intended user-visible behavior captured in the specification, and we
+deliberately fix the following known problems instead of carrying them forward:
 
-| Problem in Python app | Fix in Kotlin app |
+| Problem | Fix in Kotlin app |
 |---|---|
-| `edit_expense` has no auth check — any user can edit any expense | Only the expense payer or group creator may edit an expense |
-| Balance display ignores recorded settlements | Balances subtract settled amounts |
-| Money stored as `Float` (rounding errors possible) | Money represented as `BigDecimal`, stored as DECIMAL in the database |
+| Expense edit lacked proper auth checks | Only the expense payer or group creator may edit an expense |
+| Balance display ignored recorded settlements | Balances subtract settled amounts |
+| Money used imprecise floating-point arithmetic | Money represented as `BigDecimal`, stored as DECIMAL in the database |
 | No expense deletion | Expense deletion implemented with proper authorization |
 | Manual per-handler session checks | Single session filter applied at the router level |
 | No `@login_required` equivalent | All protected routes guarded by a centralized http4k filter |
 | `db.create_all()` schema management | Flyway manages all schema migrations |
 
-Any other divergence from Python behavior must be a conscious, documented decision.
+Any other divergence from the documented behavior must be a conscious, documented decision.
 If it is not documented in `06-decisions.md`, it is a bug, not a fix.
 
 ## Principles
@@ -55,8 +54,9 @@ deployable in principle.
 Auth and permission checks are designed alongside routes, not added afterward.
 See `02-behavior-spec.md` for the authorization matrix.
 
-### The Python app is the spec, not the gold standard
-Consult it to understand intent, not to copy implementation.
+### The spec is the source of truth
+Consult the documents in this directory to understand intent, not any previous
+implementation details.
 
 ## Non-goals
 

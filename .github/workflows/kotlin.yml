@@ -9,9 +9,6 @@ on:
 jobs:
   kotlin-test:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: kotlin-app
 
     steps:
       - uses: actions/checkout@v4
