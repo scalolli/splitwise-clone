@@ -6,14 +6,16 @@ the current phase's exit criteria are fully met and tests are green.
 ---
 
 ## Phase 0 — Foundation
-**Goal:** The Kotlin project exists, compiles, and has a working CI pipeline.
+**Goal:** The Kotlin project exists, compiles, has a working CI pipeline, and is aligned
+to the server-rendered PWA + PostgreSQL direction.
 
 ### Work
 - Create the root Gradle project with standard Kotlin source structure
 - Add http4k-core, http4k-server-jetty, JUnit 5, http4k test module to `build.gradle.kts`
 - Implement `GET /health` returning `200 OK` with body `{"status":"ok"}`
 - Configure GitHub Actions workflow for Kotlin: build + test on every push
-- Add in-memory SQLite test config
+- Add PostgreSQL test strategy using Docker/Testcontainers
+- Reserve static asset locations for the future PWA manifest, icons, and service worker
 
 ### Exit criteria
 - `./gradlew test` passes with a single health check test
@@ -50,10 +52,10 @@ framework dependencies.
 - Exposed DSL table definitions
 - Repository implementations: `UserRepository`, `GroupRepository`,
   `ExpenseRepository`, `SettlementRepository`
-- `Database` object: connects to SQLite, runs Flyway, provides transaction DSL
+- `Database` object: connects to PostgreSQL, runs Flyway, provides transaction DSL
 
 ### Exit criteria
-- Integration tests for every repository method against a real in-memory SQLite DB
+- Integration tests for every repository method against a real disposable PostgreSQL DB
 - Flyway migration runs cleanly from scratch
 - Repository tests are isolated (each test gets a fresh schema)
 - No SQL hand-written outside of Flyway migration files and Exposed DSL
@@ -171,7 +173,7 @@ framework dependencies.
 ---
 
 ## Phase 9 — Hardening and production readiness
-**Goal:** The app handles errors gracefully and is deployable.
+**Goal:** The app handles errors gracefully, is deployable, and is installable as a PWA.
 
 ### Work
 - Global `ErrorHandler` filter: renders 400/403/404/500 pages
@@ -179,6 +181,8 @@ framework dependencies.
 - Config: all values from environment variables with documented defaults
 - Dockerfile or Procfile for deployment
 - Update `render.yaml` to point to the Kotlin app or add a separate service entry
+- Add PWA manifest, icons, and service worker
+- Validate same-origin deployment with cloud-hosted app + PostgreSQL
 - Review and close any known N+1 query issues
 
 ### Exit criteria
@@ -186,3 +190,4 @@ framework dependencies.
 - All config values are externally injectable
 - App boots in a clean environment with `./gradlew run`
 - All tests remain green
+- The app is installable as a PWA in a supported browser

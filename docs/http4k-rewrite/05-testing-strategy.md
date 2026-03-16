@@ -11,7 +11,7 @@ Red → Green → Refactor. No exceptions.
 
 ```
            [ Acceptance ]      — fewest; full user journey through HTTP
-          [  Integration  ]    — repository tests against real SQLite
+          [  Integration  ]    — repository tests against real PostgreSQL
         [     Unit tests    ]  — most; domain logic, services, validation
 ```
 
@@ -24,16 +24,17 @@ Red → Green → Refactor. No exceptions.
 - Run in milliseconds; should always be runnable locally
 
 ### Repository (integration) tests (`test/kotlin/com/splitwise/persistence/`)
-- Test repository implementations against a real in-memory SQLite database
-- Each test class creates a fresh schema via Flyway before each test
+- Test repository implementations against a real PostgreSQL database started from Docker
+- Prefer Testcontainers with the official PostgreSQL image for automation and isolation
+- Each test class creates a fresh schema via Flyway before each test or uses an isolated database/schema
 - Test save, find, update, delete, constraint violations
-- Slightly slower than unit tests but still fast (SQLite in-memory)
+- Slower than unit tests, but production-shaped and still suitable for local development
 - Do not use fakes; test against the real `Exposed` implementation
 
 ### HTTP handler tests (`test/kotlin/com/splitwise/web/`)
 - Use http4k's in-process test client (`MockHttp4kClient` or `http4kClient`)
 - The entire app stack is wired in the test — handlers, filters, services, real repos
-- Use an in-memory SQLite database (not file-backed) for isolation
+- Use disposable PostgreSQL for isolation via the shared test harness
 - Test request/response contracts: status codes, redirects, flash messages, HTML content
 - Seed data programmatically in each test setup; do not share state between tests
 - Each test is independent and self-contained
@@ -76,13 +77,18 @@ Use descriptive names that read as behavior statements:
 
 ## Test setup and isolation
 
-- Every repository test uses `@BeforeEach` to run a fresh Flyway migration on a new
-  in-memory DB connection
+- Every repository test uses a fresh PostgreSQL test database or schema initialized by Flyway
 - Every handler test sets up its own users/groups/expenses via the repository directly
   (never via HTTP, to keep setup fast and explicit)
 - No shared static state; no test ordering dependencies
 - If a test needs authenticated state, set the session cookie directly in the request,
   do not replay the login flow in every test
+
+## Docker requirement
+
+- DB-backed tests require Docker locally
+- Recommended implementation: Testcontainers PostgreSQL
+- If Docker is unavailable, only pure unit tests should be considered runnable
 
 ---
 
@@ -92,7 +98,7 @@ Prefer hand-written fakes over mocking frameworks:
 - `FakeUserRepository`, `FakeGroupRepository`, `FakeExpenseRepository`,
   `FakeSettlementRepository` — implement the repository interfaces with in-memory maps
 - Use these fakes in unit tests for services
-- Use real implementations backed by in-memory SQLite for handler tests
+- Use real implementations backed by disposable PostgreSQL for handler tests
 
 Mocking frameworks (`mockk`, `Mockito`) may be used sparingly for verifying
 interactions where a fake would be over-engineered, but fakes are preferred.
@@ -114,7 +120,7 @@ Coverage is not the goal; behavior coverage is. However:
 
 ```bash
 # All tests
-cd kotlin-app && ./gradlew test
+./gradlew test
 
 # Unit tests only
 ./gradlew test --tests "com.splitwise.domain.*" --tests "com.splitwise.service.*"

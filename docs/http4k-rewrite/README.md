@@ -1,10 +1,11 @@
-# http4k Rewrite — Documentation Index
+# http4k Implementation — Documentation Index
 
 This directory contains the complete plan, specification, and working notes for the
 Kotlin/http4k implementation of the Splitwise Clone app.
 
 All active development happens at the repository root. The expected behavior is
 captured in these documents, especially the functionality checklist and behavior spec.
+The current architecture direction is a server-rendered PWA backed by PostgreSQL.
 
 ## Read these in order (first time)
 
@@ -17,6 +18,7 @@ captured in these documents, especially the functionality checklist and behavior
 | [04-iteration-backlog.md](./04-iteration-backlog.md) | Vertical slices in priority order — the queue of work |
 | [05-testing-strategy.md](./05-testing-strategy.md) | TDD expectations, test pyramid, what each level covers |
 | [06-decisions.md](./06-decisions.md) | Locked architectural decisions (ADR-style) — do not reopen without good reason |
+| [08-functionality-checklist.md](./08-functionality-checklist.md) | Consolidated product functionality and PWA expectations |
 
 ## If you are resuming work (agent or human)
 

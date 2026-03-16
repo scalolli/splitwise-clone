@@ -11,6 +11,18 @@ must deliver. It replaces the need to keep the old implementation in the reposit
 - Home page lists all groups
 - Home page lists all registered users
 - Logged-in users can navigate to group creation
+- The app is responsive and usable on mobile screens
+
+---
+
+## PWA shell
+
+- The app serves a valid `manifest.webmanifest`
+- The app serves a service worker
+- The app exposes icons required for installability
+- The app is installable in supported browsers
+- Static app-shell assets are cached for faster repeat visits
+- v1 remains online-first for writes and authenticated flows
 
 ---
 
@@ -92,6 +104,7 @@ must deliver. It replaces the need to keep the old implementation in the reposit
 - Successful mutations redirect back to the relevant page with a success message
 - Authorization failures return a redirect or forbidden response appropriate to the route
 - Money uses decimal-safe arithmetic throughout the domain and persistence layers
+- The backend serves both the frontend pages and the shared data layer access
 
 ---
 

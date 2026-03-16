@@ -181,24 +181,43 @@ templating option and requires no JavaScript build pipeline.
 
 ---
 
-## ADR-011 — SQLite for the database
+## ADR-011 — PostgreSQL for the shared database
 
 **Status:** Locked
 
-**Decision:** SQLite is the database for the Kotlin app. The default local database file
-is `./splitwise.db`, overridable via `DB_PATH`.
+**Decision:** PostgreSQL is the database for the Kotlin app in all real environments.
+The application connects via `DATABASE_URL`. Local DB-backed tests run against a
+containerized PostgreSQL instance.
 
-**Rationale:** SQLite is the simplest deployable option for the scope of this application.
+**Rationale:** The application is a centrally hosted multi-user system, so it needs a
+database that handles shared access, concurrent writes, managed hosting, and clean cloud
+deployment. PostgreSQL fits that model directly.
 
 **Rejected alternatives:**
-- PostgreSQL: correct production choice but adds Docker or a hosted service as a
-  development dependency, creating friction for a parity rewrite.
-- H2: suitable for tests but cannot be used in production without a mode flag, and
-  behaves differently from SQLite in edge cases.
+- SQLite: acceptable for single-node local prototypes, but not the preferred central
+  multi-user production database.
+- H2: suitable for tests but differs from PostgreSQL in important SQL and constraint behavior.
 
 ---
 
-## ADR-012 — Expense deletion is implemented
+## ADR-012 — Server-rendered PWA on the same backend
+
+**Status:** Locked
+
+**Decision:** The http4k application serves the HTML frontend, form posts, static assets,
+PWA manifest, and service worker from the same origin. Public JSON APIs are not required
+for v1.
+
+**Rationale:** This keeps authentication, routing, validation, and deployment simpler while
+still delivering an installable mobile-friendly experience.
+
+**Rejected alternatives:**
+- API-first SPA: adds frontend build and client-state complexity too early.
+- Separate frontend and backend deployments: unnecessary operational split for v1.
+
+---
+
+## ADR-013 — Expense deletion is implemented
 
 **Status:** Locked
 
@@ -213,7 +232,7 @@ Implementing it is consistent with the "fix known gaps" approach declared in the
 
 ---
 
-## ADR-013 — No `Float` or `Double` in test assertions for money
+## ADR-014 — No `Float` or `Double` in test assertions for money
 
 **Status:** Locked
 
@@ -222,3 +241,19 @@ Implementing it is consistent with the "fix known gaps" approach declared in the
 
 **Rationale:** Consistent with ADR-003. If tests use float comparisons, they hide
 precision bugs instead of catching them.
+
+---
+
+## ADR-015 — DB-backed tests use containerized PostgreSQL
+
+**Status:** Locked
+
+**Decision:** Repository, handler, and acceptance tests that need a real database use
+containerized PostgreSQL, preferably via Testcontainers.
+
+**Rationale:** DB-backed tests should exercise the same database family used in deployment.
+This reduces drift between tests and production while keeping setup reproducible.
+
+**Rejected alternatives:**
+- In-memory SQLite or H2: too much behavior drift from PostgreSQL.
+- Shared long-running local database: brittle, stateful, and harder for agents to run safely.

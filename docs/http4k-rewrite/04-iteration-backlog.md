@@ -43,6 +43,24 @@ Done when:
 
 ---
 
+### SLICE-002A — Postgres test infrastructure `todo`
+**Outcome:** DB-backed tests run against disposable PostgreSQL containers locally and in CI.
+
+Tests to write first:
+- `DatabaseIntegrationSmokeTest`: app can connect to a containerized PostgreSQL instance
+- Flyway can initialize a fresh PostgreSQL database in the test harness
+
+Implementation:
+- Add Testcontainers PostgreSQL dependencies
+- Add shared test support for container lifecycle and connection wiring
+- Document the local Docker requirement for DB-backed tests
+
+Done when:
+- DB-backed tests can run on a clean machine with Docker installed
+- CI can run the same DB-backed test setup without custom manual bootstrapping
+
+---
+
 ## Phase 1 — Domain model
 
 ### SLICE-003 — Money value object `todo`
@@ -125,7 +143,7 @@ Done when: all validation tests pass with exact error message strings.
 **Outcome:** Flyway manages the schema; a `Database` object provides transaction support.
 
 Tests to write first:
-- Flyway runs `V1__initial_schema.sql` without errors on a fresh in-memory SQLite DB
+- Flyway runs `V1__initial_schema.sql` without errors on a fresh PostgreSQL test container
 - Re-running Flyway on an already-migrated DB is idempotent
 
 Implementation:
@@ -149,7 +167,7 @@ Tests to write first:
 Implementation:
 - `persistence/UserRepository.kt`
 
-Done when: all repo tests pass against in-memory SQLite.
+Done when: all repo tests pass against disposable PostgreSQL.
 
 ---
 
@@ -491,8 +509,40 @@ Tests to write first:
 - None (config smoke test only: app boots with all defaults)
 
 Implementation:
-- `config/AppConfig.kt` — reads `DB_PATH`, `PORT`, `SESSION_SECRET`
+- `config/AppConfig.kt` — reads `DATABASE_URL`, `PORT`, `SESSION_SECRET`
 - `Procfile` or `Dockerfile` for Kotlin app
 - Update `render.yaml` to include Kotlin app service
 
 Done when: `./gradlew run` boots with defaults; all existing tests still pass.
+
+---
+
+### SLICE-028 — PWA manifest and icons `todo`
+**Outcome:** The app is installable with a valid manifest and application icons.
+
+Tests to write first:
+- `GET /manifest.webmanifest` returns `200` with valid web manifest content type
+- Manifest includes app name, start URL, display mode, and icon entries
+
+Implementation:
+- `src/main/resources/public/manifest.webmanifest`
+- App icons for install surfaces
+- Static asset routing for manifest and icons
+
+Done when: browser install prompts recognize the app as installable.
+
+---
+
+### SLICE-029 — Service worker for app shell caching `todo`
+**Outcome:** Static assets and app shell resources are cached for repeat visits.
+
+Tests to write first:
+- `GET /service-worker.js` returns `200`
+- Service worker registers from the base layout
+
+Implementation:
+- `src/main/resources/public/service-worker.js`
+- Base template registration script
+- Conservative online-first caching strategy for static assets only
+
+Done when: the app reloads quickly after first visit and remains online-first for writes.

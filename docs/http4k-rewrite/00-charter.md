@@ -1,10 +1,13 @@
-# Charter — http4k Rewrite
+# Charter — http4k Implementation
 
 ## What this is
 
 A Kotlin/http4k implementation of the Splitwise Clone built from a clean, documented
 behavior contract. We are not translating an older codebase line-by-line; we are
 building the application from the specification in this directory.
+
+The application is delivered as a server-rendered progressive web app (PWA) backed by
+a centrally deployed http4k service and a shared PostgreSQL database.
 
 ## What this is not
 
@@ -46,6 +49,15 @@ test to drive it. The Red-Green-Refactor cycle is the unit of work.
 Each iteration delivers a complete, user-visible behavior end-to-end: domain logic,
 persistence, HTTP handler, and template. No layer-by-layer approach.
 
+### Server-rendered PWA first
+The backend serves the HTML frontend, form posts, static assets, PWA manifest, and
+service worker from the same application. Public JSON APIs are optional future work,
+not a v1 requirement.
+
+### Central backend, shared database
+Clients never connect directly to the database. All reads and writes go through the
+http4k application, which is the only component allowed to access PostgreSQL.
+
 ### Small, committed increments
 Commit when a slice is green. Do not accumulate work. Each commit should be independently
 deployable in principle.
@@ -66,6 +78,8 @@ implementation details.
 - Real-time updates
 - Multi-currency support
 - Full feature parity with real Splitwise
+- Public API-first architecture for v1
+- Offline write synchronization in v1
 
 ## Success criteria
 
@@ -80,3 +94,4 @@ The rewrite is "done" when:
 7. Authorization rules are enforced: only permitted users can mutate each resource.
 8. All tests are green.
 9. The app boots locally with `./gradlew run` and tests pass with `./gradlew test`.
+10. The app is installable as a PWA on mobile and desktop browsers.

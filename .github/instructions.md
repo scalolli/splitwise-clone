@@ -8,11 +8,14 @@ This repository contains the active Kotlin/http4k implementation of Splitwise Cl
 - Start with `docs/http4k-rewrite/README.md` for orientation
 - Use `docs/http4k-rewrite/07-handoff.md` to find the exact next slice
 - Use `docs/http4k-rewrite/08-functionality-checklist.md` for the consolidated behavior checklist
+- Assume a server-rendered PWA backed by PostgreSQL unless the docs explicitly change
 
 ## Technology Direction
 - Kotlin
 - http4k
 - Gradle
+- PostgreSQL
+- Handlebars
 - Test-first implementation per slice
 
 ## Development Methodology
@@ -30,6 +33,7 @@ without relevant tests.
 - Read the `SLICE-003` entry in `docs/http4k-rewrite/04-iteration-backlog.md`
 - Write the failing `Money` tests first
 - Implement the minimal value object to go green
+- Use the Postgres/Testcontainers plan in `docs/http4k-rewrite/05-testing-strategy.md` for any DB-backed work
 
 ## Project Structure
 ```

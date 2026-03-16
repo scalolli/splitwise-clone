@@ -36,6 +36,11 @@ correct behavior is documented here instead.
 - Unauthenticated access to any protected route: redirect to `/login` with flash
   "Please log in to access this page"
 
+### Delivery rules
+- The application is server-rendered and same-origin
+- Primary user flows use HTML `GET` pages and `POST` form submissions
+- Public JSON APIs are optional future work and not required for v1
+
 ---
 
 ## Home page
@@ -43,6 +48,16 @@ correct behavior is documented here instead.
 - `GET /` — accessible without login
 - Displays a list of all groups
 - Displays a list of all registered users (usernames)
+
+---
+
+## Progressive Web App
+
+- `GET /manifest.webmanifest` returns valid install metadata
+- `GET /service-worker.js` returns the service worker script
+- The application is installable on supported mobile and desktop browsers
+- Static assets required for the app shell are cacheable for faster repeat visits
+- v1 remains online-first: writes require backend connectivity
 
 ---
 
@@ -180,6 +195,19 @@ correct behavior is documented here instead.
 | Remove member from group | Group creator only (cannot remove self) |
 | Record settlement | Group members only |
 | View settlement history | Group members only |
+
+---
+
+## HTTP interaction style
+
+The primary route model is:
+
+- `GET` for page rendering
+- `POST` for mutations
+- Redirects and flash messages for successful form submissions
+
+Separate public JSON APIs may be added later if native/mobile clients or richer client-side
+interactions justify them.
 
 ---
 
