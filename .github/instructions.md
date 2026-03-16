@@ -1,22 +1,29 @@
 # Splitwise Clone - Development Instructions
 
 ## Overview
-This is a Splitwise-like expense sharing web application built with Flask, using SQLAlchemy for ORM and SQLite as the database.
+This repository is now in the http4k rewrite phase. The active product direction is a ground-up Kotlin/http4k implementation. The legacy Flask application remains in the repository as a behavioral reference and is not the main delivery track.
 
-## Technology Stack
-- Flask 2.0.1
-- SQLAlchemy 1.4.46
-- Flask-SQLAlchemy 2.5.1
-- SQLite database
+## Active Project Direction
+- Primary work happens in the Kotlin rewrite track
+- Start with `docs/http4k-rewrite/README.md` for orientation
+- Use `docs/http4k-rewrite/07-handoff.md` to find the exact next slice
+- The next implementation step is `SLICE-001: Gradle project scaffold`
+- The Python app in `app/` is effectively frozen and should only be used as a source of behavioral truth
 
-## Database Models
+## Rewrite Technology Direction
+- Kotlin
+- http4k
+- Gradle
+- Test-first implementation per slice
+
+## Legacy Flask Database Models
 - User: Core user accounts with authentication
 - Group: Expense sharing groups with members
 - Expense: Individual expenses paid by users
 - ExpenseShare: How expenses are split among group members
 - Settlement: Payments between users to settle debts
 
-## Current Implementation Status
+## Legacy Flask Implementation Status
 
 ### ✅ Completed Features
 1. Basic Flask app with SQLAlchemy integration
@@ -35,18 +42,13 @@ This is a Splitwise-like expense sharing web application built with Flask, using
     - Automatic balance recalculation after edits
     - All 65 tests passing with full test coverage
 
-### Pending Features
-1. **Expense deletion (HIGH PRIORITY)**
-2. Settlement tracking system
-3. User profile management
-4. Email notification system
-5. UI/UX improvements
-6. API endpoints for mobile integration
+### Legacy Pending Features
+These are no longer the active roadmap for this repository. Equivalent or improved behavior should be delivered through the Kotlin/http4k rewrite backlog instead.
 
 ### Development Methodology
 - Following Test-Driven Development (TDD)
 - Iterative development with regular commits
-- Focus on core functionality first
+- Focus on the rewrite slices first
 - **ALL code changes must have corresponding tests**
 
 ## Testing Policy
@@ -54,57 +56,24 @@ This project follows strict Test-Driven Development (TDD). All new features, bug
 
 ### Next Steps
 
-#### 1. Implement Expense Deletion (HIGH PRIORITY)
-- Create DELETE route for expenses (`/expenses/{id}/delete`)
-- Add confirmation dialog/page before deletion
-- Implement proper authorization (only payer or group admin can delete)
-- Remove all related ExpenseShare records
-- Update balance calculations after deletion
-- Write comprehensive tests for deletion functionality
-
-#### 2. Refactor Authentication System (MEDIUM PRIORITY)
-- Implement Flask-Login with @login_required decorator
-- Apply @login_required to all authenticated routes
-- Standardize authentication checks across the application
-- Improve login/logout flow and session management
-- Add proper user session handling
-
-#### 3. Enhance Group Management (MEDIUM PRIORITY)
-- Add functionality to edit group details (name, description)
-- Implement advanced member management (add/remove members from group page)
-- Create admin controls for group owners
-- Add permissions system for different member roles
-- Implement group deletion functionality
-
-#### 4. User Profile Management (MEDIUM PRIORITY)
-- Create user profile pages
-- Allow users to edit their details (username, email, password)
-- Add profile picture support
-- Implement account deletion functionality
-
-#### 5. Settlement System Enhancements (LOW PRIORITY)
-- Implement settlement tracking and history
-- Add settlement suggestions based on optimized debt resolution
-- Create settlement confirmation system
-- Add payment method tracking
-
-#### 6. UI/UX Improvements (ONGOING)
-- Improve responsive design for mobile devices
-- Add loading states and better error handling in UI
-- Implement confirmation dialogs for destructive actions
-- Add keyboard shortcuts for common actions
-- Improve accessibility compliance
+#### 1. Start the Kotlin/http4k implementation
+- Read `docs/http4k-rewrite/07-handoff.md`
+- Read the `SLICE-001` entry in `docs/http4k-rewrite/04-iteration-backlog.md`
+- Create `kotlin-app/`
+- Write the failing `HealthCheckTest` first
+- Implement the minimal `/health` endpoint to go green
+- Update `docs/http4k-rewrite/07-handoff.md` when the slice is complete
 
 ---
 
 ## http4k Rewrite
 
-The Python app is being rewritten from scratch in Kotlin using http4k. The full plan,
+The Python app rewrite is now the active phase of the repository. The full plan,
 architectural decisions, slice-by-slice backlog, and handoff state live in:
 
 **`docs/http4k-rewrite/`** — start with `README.md` for orientation.
 
-The Kotlin app will live in `kotlin-app/`. The Python app in `app/` is never modified.
+The Kotlin app will live in `kotlin-app/`. The Python app in `app/` should be treated as a frozen legacy reference unless a documentation update explicitly says otherwise.
 
 ---
 
@@ -132,9 +101,13 @@ tests/
 - Comprehensive form validation testing
 - All authentication and group management tests passing
 
+These numbers describe the legacy Flask app, not the rewrite progress.
+
 ## Key Implementation Notes
 - Expense editing uses BaseExpenseForm with comprehensive validation
 - All form validations include custom error messages
 - Balance calculations are automatically updated after any expense changes
 - Test coverage is mandatory for all new features
 - Following Flask best practices with Blueprint organization
+
+For active delivery decisions, prefer the rewrite docs over this legacy implementation detail section.

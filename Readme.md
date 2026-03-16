@@ -1,9 +1,16 @@
 # Splitwise Clone
 
 [![Test Suite](https://github.com/scalolli/splitwise-clone/actions/workflows/test.yml/badge.svg)](https://github.com/scalolli/splitwise-clone/actions/workflows/test.yml)
-A comprehensive expense sharing application built with Flask and SQLAlchemy, inspired by Splitwise.
+An expense sharing application inspired by Splitwise. The active project is now the Kotlin/http4k rewrite; the legacy Flask app remains in the repository as a behavioral reference and is no longer the main delivery track.
 
-## Features
+## Current Phase
+
+- Active work is the ground-up Kotlin/http4k rewrite in `docs/http4k-rewrite/`
+- The next implementation step is `SLICE-001` in `docs/http4k-rewrite/07-handoff.md`
+- The Flask app in `app/` is effectively frozen and treated as a reference, not the forward path
+- New architecture, backlog, and handoff notes live under `docs/http4k-rewrite/`
+
+## Legacy Flask App Features
 
 - **User Authentication**: Secure login and registration system
 - **Group Management**: Create and manage expense sharing groups
@@ -12,7 +19,7 @@ A comprehensive expense sharing application built with Flask and SQLAlchemy, ins
 - **Balance Calculation**: Automatic balance tracking and settlement suggestions
 - **Comprehensive Validation**: Form validation with detailed error handling
 
-## Technologies Used
+## Legacy Flask Stack
 
 - **Backend**: Flask 2.0.1, SQLAlchemy 1.4.46
 - **Database**: SQLite with Flask-SQLAlchemy 2.5.1
@@ -20,7 +27,7 @@ A comprehensive expense sharing application built with Flask and SQLAlchemy, ins
 - **CI/CD**: GitHub Actions for automated testing
 - **Frontend**: Jinja2 templates with responsive CSS
 
-## Project Status
+## Legacy Flask Status
 
 - ✅ **65 tests passing, 1 skipped**
 - ✅ **100% success rate on active tests**
@@ -28,7 +35,9 @@ A comprehensive expense sharing application built with Flask and SQLAlchemy, ins
 - ✅ **Comprehensive form validation**
 - ✅ **Automated CI/CD pipeline**
 
-## Setup and Installation
+This legacy implementation is retained for behavioral comparison while the Kotlin/http4k rewrite is built.
+
+## Legacy Flask Setup
 
 ### Prerequisites
 - Python 3.9+ (tested on 3.9, 3.10, 3.11, 3.12)
@@ -66,7 +75,7 @@ A comprehensive expense sharing application built with Flask and SQLAlchemy, ins
 6. **Access the application**:
    Open your browser and navigate to `http://localhost:5000`
 
-## Running Tests
+## Legacy Flask Tests
 
 ### Run all tests:
 ```bash
@@ -90,10 +99,11 @@ python -m pytest tests/functional/
 python -m pytest tests/functional/test_expense_editing.py -v
 ```
 
-## Project Structure
+## Repository Structure
 
 ```
 splitwise-fresh/
+├── docs/http4k-rewrite/ # Rewrite plan, architecture, backlog, handoff
 ├── app/
 │   ├── forms/           # WTForms validation classes
 │   ├── models/          # SQLAlchemy database models
@@ -112,7 +122,18 @@ splitwise-fresh/
     └── splitwise.db    # SQLite database file
 ```
 
-## Database Schema
+## Rewrite Docs
+
+Start here if you are continuing the rewrite work:
+
+- `docs/http4k-rewrite/README.md` - documentation index
+- `docs/http4k-rewrite/07-handoff.md` - current state and exact next action
+- `docs/http4k-rewrite/04-iteration-backlog.md` - slice-by-slice delivery order
+- `docs/http4k-rewrite/06-decisions.md` - locked architectural decisions
+
+The current next phase is to start `SLICE-001: Gradle project scaffold` and create the first failing test for `GET /health` in the new Kotlin app.
+
+## Legacy Flask Database Schema
 
 - **User**: User accounts with authentication
 - **Group**: Expense sharing groups with members
@@ -128,6 +149,8 @@ This project follows **Test-Driven Development (TDD)**:
 2. **Implement the feature** to make tests pass
 3. **Refactor** while keeping tests green
 4. **All changes require tests** - no exceptions
+
+For active delivery, apply that workflow to the Kotlin/http4k rewrite first. The legacy Flask codebase should only be consulted as a reference unless a rewrite document explicitly says otherwise.
 
 ### GitHub Actions CI/CD
 
@@ -150,9 +173,9 @@ The project includes automated testing on:
 
 ## Kotlin Rewrite
 
-This application is being rewritten from scratch in Kotlin using http4k. The rewrite
-fixes known issues in the Python app (missing auth on expense edit, settlements ignored
-in balance calculation, Float money storage) and delivers full feature parity.
+This application is being rewritten from scratch in Kotlin using http4k. The Python/Flask implementation is no longer the active product direction; it remains in the repository as a legacy reference while the rewrite becomes the primary codebase.
+
+The rewrite fixes known issues in the Flask app, including missing auth on expense edit, settlements ignored in balance calculation, and Float-based money storage.
 
 See [`docs/http4k-rewrite/`](docs/http4k-rewrite/) for the full plan:
 - Charter and scope — `00-charter.md`
