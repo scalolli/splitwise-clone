@@ -18,6 +18,7 @@ The next agent (or human) picks up exactly from "Next action".
 | Schema | `src/main/resources/db/migration/V1__initial_schema.sql` | 6 tables: `users`, `groups`, `group_members`, `expenses`, `expense_shares`, `settlements` |
 | User repository | `persistence/UserRepository.kt` | `save`, `findById`, `findByUsername`, `findByEmail`; all tests pass |
 | Group repository | `persistence/GroupRepository.kt` | `create`, `findById`, `findAll`, `addMember`, `removeMember`; all tests pass |
+| Expense repository | `persistence/ExpenseRepository.kt` | `create`, `findById`, `findByGroup`, `update`, `delete`; all tests pass |
 | Test infrastructure | `test/persistence/PostgresTestSupport.kt` | Singleton Testcontainers container; `freshConfig()` for raw DB config; `freshDatabase()` for a migrated `Database` ready for repository tests |
 | DB smoke tests | `test/persistence/DatabaseIntegrationSmokeTest.kt` | Verifies connection and Flyway idempotency |
 | CI | `.github/workflows/kotlin.yml` | Runs `./gradlew test` on `ubuntu-latest` (Docker available); green |
@@ -29,14 +30,14 @@ The next agent (or human) picks up exactly from "Next action".
 
 ## Next action
 
-**Start SLICE-010: Expense repository.**
+**Start SLICE-011: Settlement repository.**
 
-1. Read SLICE-010 in `04-iteration-backlog.md`.
+1. Read SLICE-011 in `04-iteration-backlog.md`.
 2. Use `PostgresTestSupport.freshDatabase()` for all persistence tests.
-3. Write failing tests first: create expense with shares → retrieve all shares, update expense → old shares replaced, delete expense → shares cascade-deleted, find all for a group.
-4. Implement `src/main/kotlin/com/splitwise/persistence/ExpenseRepository.kt` against `Database`, `ExpensesTable`, and `ExpenseSharesTable` defined in `Tables.kt`.
+3. Write failing tests first: record settlement → retrieve by group ID, multiple settlements returned in descending date order, filter by pair of users within a group.
+4. Implement `src/main/kotlin/com/splitwise/persistence/SettlementRepository.kt` against `Database` and `SettlementsTable` in `Tables.kt`.
 5. Run `./gradlew test` — all tests must be green before committing.
-6. Commit: `feat: add expense repository`.
+6. Commit: `feat: add settlement repository`.
 
 ## Slice status
 
@@ -52,7 +53,7 @@ The next agent (or human) picks up exactly from "Next action".
 | SLICE-007 | Database setup and Flyway | `done` |
 | SLICE-008 | User repository | `done` |
 | SLICE-009 | Group repository | `done` |
-| SLICE-010 | Expense repository | `todo` |
+| SLICE-010 | Expense repository | `done` |
 | SLICE-011 | Settlement repository | `todo` |
 | SLICE-012 | Register | `todo` |
 | SLICE-013 | Login and logout | `todo` |
