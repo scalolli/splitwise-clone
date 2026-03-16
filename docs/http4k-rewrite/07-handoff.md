@@ -17,25 +17,26 @@ The next agent (or human) picks up exactly from "Next action".
 | Database layer | `persistence/Database.kt`, `persistence/Tables.kt` | Wraps Exposed DSL + Flyway; provides `connect()`, `migrate()`, `transaction {}` |
 | Schema | `src/main/resources/db/migration/V1__initial_schema.sql` | 6 tables: `users`, `groups`, `group_members`, `expenses`, `expense_shares`, `settlements` |
 | User repository | `persistence/UserRepository.kt` | `save`, `findById`, `findByUsername`, `findByEmail`; all tests pass |
+| Group repository | `persistence/GroupRepository.kt` | `create`, `findById`, `findAll`, `addMember`, `removeMember`; all tests pass |
 | Test infrastructure | `test/persistence/PostgresTestSupport.kt` | Singleton Testcontainers container; `freshConfig()` for raw DB config; `freshDatabase()` for a migrated `Database` ready for repository tests |
 | DB smoke tests | `test/persistence/DatabaseIntegrationSmokeTest.kt` | Verifies connection and Flyway idempotency |
 | CI | `.github/workflows/kotlin.yml` | Runs `./gradlew test` on `ubuntu-latest` (Docker available); green |
 | Local dev DB | `docker-compose.yml` | `docker compose up -d` starts Postgres on `5432`; credentials `splitwise/splitwise/splitwise` |
 
-**Not yet started:** service layer, repository implementations, all HTTP handlers beyond `/health`, Handlebars templates, BCrypt auth, session filter, PWA assets.
+**Not yet started:** service layer, expense/settlement repository implementations, all HTTP handlers beyond `/health`, Handlebars templates, BCrypt auth, session filter, PWA assets.
 
 ---
 
 ## Next action
 
-**Start SLICE-009: Group repository.**
+**Start SLICE-010: Expense repository.**
 
-1. Read SLICE-009 in `04-iteration-backlog.md`.
+1. Read SLICE-010 in `04-iteration-backlog.md`.
 2. Use `PostgresTestSupport.freshDatabase()` for all persistence tests.
-3. Write failing tests first: create group → find by ID, add member → member appears, remove member, idempotent add, find all groups.
-4. Implement `src/main/kotlin/com/splitwise/persistence/GroupRepository.kt` against `Database`, `GroupsTable`, and `GroupMembersTable` defined in `Tables.kt`.
+3. Write failing tests first: create expense with shares → retrieve all shares, update expense → old shares replaced, delete expense → shares cascade-deleted, find all for a group.
+4. Implement `src/main/kotlin/com/splitwise/persistence/ExpenseRepository.kt` against `Database`, `ExpensesTable`, and `ExpenseSharesTable` defined in `Tables.kt`.
 5. Run `./gradlew test` — all tests must be green before committing.
-6. Commit: `feat: add group repository`.
+6. Commit: `feat: add expense repository`.
 
 ## Slice status
 
@@ -50,7 +51,7 @@ The next agent (or human) picks up exactly from "Next action".
 | SLICE-006 | Expense validator | `done` |
 | SLICE-007 | Database setup and Flyway | `done` |
 | SLICE-008 | User repository | `done` |
-| SLICE-009 | Group repository | `todo` |
+| SLICE-009 | Group repository | `done` |
 | SLICE-010 | Expense repository | `todo` |
 | SLICE-011 | Settlement repository | `todo` |
 | SLICE-012 | Register | `todo` |
