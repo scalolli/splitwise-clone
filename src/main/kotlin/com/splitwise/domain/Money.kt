@@ -10,14 +10,14 @@ data class Money(val value: BigDecimal) {
 
     constructor(value: String) : this(value.toBigDecimal().setScale(SCALE, ROUNDING_MODE))
 
-    operator fun plus(other: Money): Money = Money(value.add(other.value).normalized())
+    operator fun plus(other: Money): Money = from(value.add(other.value))
 
-    operator fun minus(other: Money): Money = Money(value.subtract(other.value).normalized())
+    operator fun minus(other: Money): Money = from(value.subtract(other.value))
 
     companion object {
         private const val SCALE = 2
         private val ROUNDING_MODE = RoundingMode.HALF_UP
 
-        private fun BigDecimal.normalized(): BigDecimal = setScale(SCALE, ROUNDING_MODE)
+        fun from(value: BigDecimal): Money = Money(value.setScale(SCALE, ROUNDING_MODE))
     }
 }
