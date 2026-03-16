@@ -97,72 +97,14 @@ This project follows strict Test-Driven Development (TDD). All new features, bug
 
 ---
 
-## http4k Migration Plan
+## http4k Rewrite
 
-The plan is to rewrite this application as a Kotlin/http4k app, delivered incrementally. The new app will live in a `kotlin-app/` subdirectory inside this repo. The Python app remains untouched during migration.
+The Python app is being rewritten from scratch in Kotlin using http4k. The full plan,
+architectural decisions, slice-by-slice backlog, and handoff state live in:
 
-**Chosen stack:**
-- Language: Kotlin (JVM)
-- Framework: http4k
-- Persistence: Exposed ORM + Flyway migrations + SQLite
-- Templating: Handlebars (`http4k-template-handlebars`)
-- Auth: http4k sessions + BCrypt
-- Testing: JUnit 5 + http4k test module
+**`docs/http4k-rewrite/`** — start with `README.md` for orientation.
 
-### Phase 1 — Project Scaffolding
-- Set up Kotlin/Gradle project in `kotlin-app/`
-- Configure dependencies: http4k-core, http4k-server-jetty, Exposed, SQLite JDBC, BCrypt
-- Set up test infrastructure: JUnit 5, http4k test module, in-memory SQLite
-- GitHub Actions CI: build + test on every push
-- **Deliverable:** `./gradlew test` passes with a `GET /health` smoke test
-
-### Phase 2 — Domain Model (pure Kotlin, no persistence)
-- Define value objects: `UserId`, `GroupId`, `ExpenseId`, `Money`
-- Define domain entities: `User`, `Group`, `Expense`, `ExpenseShare`, `Settlement`
-- Implement `BalanceCalculator` — port the pairwise simplification algorithm from `balance_service.py`
-- No persistence, no HTTP — pure domain logic with unit tests
-- **Deliverable:** Balance algorithm fully covered by unit tests
-
-### Phase 3 — Persistence Layer
-- Define Exposed table schemas
-- Implement repository interfaces + Exposed implementations: `UserRepository`, `GroupRepository`, `ExpenseRepository`, `SettlementRepository`
-- Schema management via Flyway (replaces `db.create_all()`)
-- Integration tests against in-memory SQLite
-- **Deliverable:** All repositories tested against real SQLite
-
-### Phase 4 — Authentication
-- `POST /register`, `POST /login`, `GET /logout`
-- http4k session filter to protect routes — replaces the manual per-handler session checks in the Python app
-- BCrypt password hashing
-- **Deliverable:** Register, login, logout working with integration tests; protected routes return redirect to login
-
-### Phase 5 — Groups
-- `GET /` — list all groups
-- `GET /group/{id}` — group detail with members, expenses, calculated balances
-- `GET|POST /group/create` — create group
-- `POST /group/{id}/add_member` — add member (creator only)
-- `POST /group/{id}/remove_member/{userId}` — remove member (creator only)
-- `GET|POST /group/{id}/edit` — edit group name/description
-- **Deliverable:** Full group management with functional tests
-
-### Phase 6 — Expenses
-- `GET|POST /group/{id}/add_expense` — add expense with splits
-- `GET|POST /expenses/{id}/edit` — edit expense (with auth guard — fixing the Python security gap)
-- Port all validation from `BaseExpenseForm`: split sum check, payer-in-splits, membership check, duplicate check
-- **Deliverable:** Expense creation and editing with full validation
-
-### Phase 7 — Balances & Settlements
-- Wire `BalanceCalculator` into the group detail page
-- `GET /group/{id}/settlements` — settlement history
-- `POST /group/{id}/settle` — record a settlement
-- Update `BalanceCalculator` to subtract settled amounts (fixing the Python gap where settlements are stored but ignored)
-- **Deliverable:** Balances display correctly; settlements reduce displayed balances
-
-### Phase 8 — Polish & Hardening
-- Fix all known Python gaps carried over (unauthenticated edit expense, settlements not wired up)
-- Proper 400/404/500 error handling
-- Replace N+1 balance queries with a single join query
-- **Deliverable:** All functional tests green; no known security gaps
+The Kotlin app will live in `kotlin-app/`. The Python app in `app/` is never modified.
 
 ---
 

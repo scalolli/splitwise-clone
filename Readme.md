@@ -148,15 +148,19 @@ The project includes automated testing on:
 7. Push to the branch (`git push origin feature/amazing-feature`)
 8. Open a Pull Request
 
-## Next Steps
+## Kotlin Rewrite
 
-See [`.github/instructions.md`](.github/instructions.md) for detailed development roadmap including:
+This application is being rewritten from scratch in Kotlin using http4k. The rewrite
+fixes known issues in the Python app (missing auth on expense edit, settlements ignored
+in balance calculation, Float money storage) and delivers full feature parity.
 
-- **Expense deletion functionality** (HIGH PRIORITY)
-- Authentication system improvements
-- Enhanced group management
-- User profile management
-- Settlement system enhancements
+See [`docs/http4k-rewrite/`](docs/http4k-rewrite/) for the full plan:
+- Charter and scope — `00-charter.md`
+- Target architecture — `01-target-architecture.md`
+- Behavior spec (routes, auth matrix, validation rules) — `02-behavior-spec.md`
+- Slice-by-slice backlog — `04-iteration-backlog.md`
+- Architectural decisions — `06-decisions.md`
+- Current handoff state (where to pick up) — `07-handoff.md`
 
 ## License
 
