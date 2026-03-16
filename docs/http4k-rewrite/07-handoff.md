@@ -30,14 +30,18 @@ The next agent (or human) picks up exactly from "Next action".
 
 ## Next action
 
-**Start SLICE-011: Settlement repository.**
+**Start SLICE-V01: Register, login, home page.**
 
-1. Read SLICE-011 in `04-iteration-backlog.md`.
-2. Use `PostgresTestSupport.freshDatabase()` for all persistence tests.
-3. Write failing tests first: record settlement → retrieve by group ID, multiple settlements returned in descending date order, filter by pair of users within a group.
-4. Implement `src/main/kotlin/com/splitwise/persistence/SettlementRepository.kt` against `Database` and `SettlementsTable` in `Tables.kt`.
+1. Read SLICE-V01 in `04-iteration-backlog.md`.
+2. Add BCrypt dependency to `build.gradle.kts` before writing any service code.
+3. Write failing tests first — work handler by handler: register, then login/logout, then home page, then session filter.
+4. Implement `UserService`, `AuthHandler`, `MainHandler`, `SessionFilter`, and all four templates.
 5. Run `./gradlew test` — all tests must be green before committing.
-6. Commit: `feat: add settlement repository`.
+6. Commit: `feat: register, login, home page`.
+
+**Key note on slice ordering:** The backlog has been restructured into vertical slices
+(SLICE-V01 through SLICE-V09). Each slice delivers end-to-end user-visible value.
+`SettlementRepository` is deferred to SLICE-V02 where it is first needed.
 
 ## Slice status
 
@@ -54,25 +58,15 @@ The next agent (or human) picks up exactly from "Next action".
 | SLICE-008 | User repository | `done` |
 | SLICE-009 | Group repository | `done` |
 | SLICE-010 | Expense repository | `done` |
-| SLICE-011 | Settlement repository | `todo` |
-| SLICE-012 | Register | `todo` |
-| SLICE-013 | Login and logout | `todo` |
-| SLICE-014 | Session filter | `todo` |
-| SLICE-015 | Home page | `todo` |
-| SLICE-016 | Group detail page | `todo` |
-| SLICE-017 | Create group | `todo` |
-| SLICE-018 | Edit group | `todo` |
-| SLICE-019 | Add/remove member | `todo` |
-| SLICE-020 | Add expense | `todo` |
-| SLICE-021 | Edit expense | `todo` |
-| SLICE-022 | Delete expense | `todo` |
-| SLICE-023 | Record settlement | `todo` |
-| SLICE-024 | Settlement history | `todo` |
-| SLICE-025 | Balances reflect settlements | `todo` |
-| SLICE-026 | Error pages | `todo` |
-| SLICE-027 | Config and deployment | `todo` |
-| SLICE-028 | PWA manifest and icons | `todo` |
-| SLICE-029 | Service worker for app shell caching | `todo` |
+| SLICE-V01 | Register, login, home page | `todo` |
+| SLICE-V02 | Group detail page | `todo` |
+| SLICE-V03 | Create group and add expense | `todo` |
+| SLICE-V04 | Edit group and manage members | `todo` |
+| SLICE-V05 | Edit and delete expense | `todo` |
+| SLICE-V06 | Record settlement and history | `todo` |
+| SLICE-V07 | Error pages | `todo` |
+| SLICE-V08 | Config and deployment | `todo` |
+| SLICE-V09 | PWA manifest and service worker | `todo` |
 
 ## Key reference files
 

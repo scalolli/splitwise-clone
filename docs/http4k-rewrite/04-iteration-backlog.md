@@ -1,493 +1,207 @@
 # Iteration Backlog
 
-Slices are ordered by dependency. Each slice is the smallest independently
-deliverable unit of behavior. Work top-to-bottom. Do not skip slices unless
-explicitly marked as optional.
+Slices are ordered to deliver user-visible value as early as possible.
+Each slice cuts through all layers (HTTP → service → repo → DB) and delivers
+something a user can actually see or do.
 
 **Status legend:** `todo` | `in-progress` | `done`
 
 ---
 
-## Phase 0 — Foundation
+## Phase 0 — Foundation (done)
 
 ### SLICE-001 — Gradle project scaffold `done`
-**Outcome:** The root Gradle project compiles with a `GET /health` endpoint.
-
-Tests to write first:
-- `HealthCheckTest`: `GET /health` returns `200 OK` with body `{"status":"ok"}`
-
-Implementation:
-- `build.gradle.kts` with http4k-core, http4k-server-jetty, http4k-testing-junit5, JUnit 5
-- `settings.gradle.kts`
-- `App.kt` — starts Jetty on configured port
-- `HealthHandler.kt` — returns fixed JSON response
-- `SplitwiseApp.kt` — root router
-
-Done when:
-- `./gradlew test` passes
-- `./gradlew run` boots the server
-
----
-
 ### SLICE-002 — Kotlin CI pipeline `done`
-**Outcome:** GitHub Actions runs Kotlin build and tests on every push.
-
-Tests to write first:
-- None (CI config only)
-
-Implementation:
-- `.github/workflows/kotlin.yml` — runs `./gradlew test` on `ubuntu-latest`
-
-Done when:
-- Push to `main` triggers Kotlin CI and it passes
-
----
-
 ### SLICE-002A — Postgres test infrastructure `done`
-**Outcome:** DB-backed tests run against disposable PostgreSQL containers locally and in CI.
-
-Tests to write first:
-- `DatabaseIntegrationSmokeTest`: app can connect to a containerized PostgreSQL instance
-- Flyway can initialize a fresh PostgreSQL database in the test harness
-
-Implementation:
-- Add Testcontainers PostgreSQL dependencies
-- Add shared test support for container lifecycle and connection wiring
-- Document the local Docker requirement for DB-backed tests
-
-Done when:
-- DB-backed tests can run on a clean machine with Docker installed
-- CI can run the same DB-backed test setup without custom manual bootstrapping
 
 ---
 
-## Phase 1 — Domain model
+## Phase 1 — Domain model (done)
 
 ### SLICE-003 — Money value object `done`
-**Outcome:** `Money` is a type-safe, `BigDecimal`-backed value object with arithmetic.
-
-Tests to write first:
-- `Money(10.00)` equals `Money(10.00)`
-- `Money(10.00) + Money(5.00)` equals `Money(15.00)`
-- `Money(10.00) - Money(3.00)` equals `Money(7.00)`
-- `Money(0)` is valid; `Money(-1)` throws `IllegalArgumentException`
-- Arithmetic preserves scale (2 decimal places)
-
-Implementation:
-- `domain/Money.kt`
-
-Done when: all unit tests pass, no framework imports.
-
----
-
 ### SLICE-004 — Core domain entities `done`
-**Outcome:** `User`, `Group`, `Expense`, `ExpenseShare`, `Settlement` defined as
-plain data classes with typed IDs.
-
-Tests to write first:
-- Value object identity: `UserId(1) == UserId(1)`, `UserId(1) != UserId(2)`
-- Entity construction with all required fields
-
-Implementation:
-- `domain/UserId.kt`, `domain/GroupId.kt`, `domain/ExpenseId.kt`, `domain/SettlementId.kt`
-- `domain/User.kt`, `domain/Group.kt`, `domain/Expense.kt`,
-  `domain/ExpenseShare.kt`, `domain/Settlement.kt`
-
-Done when: all entity and ID tests pass, zero external dependencies.
-
----
-
 ### SLICE-005 — Balance calculator `done`
-**Outcome:** `BalanceCalculator` correctly computes net pairwise balances from
-expenses and subtracts settlements.
-
-Tests to write first:
-- Single expense: A pays £90 split equally (£30 each) among A, B, C → B owes A £30, C owes A £30
-- Reciprocal debts: A owes B £30, B owes A £10 → A owes B £20
-- No balance when fully settled
-- Partial settlement reduces displayed balance
-- Zero balance pair is not included in results
-- Multiple expenses, multiple payers
-
-Implementation:
-- `domain/BalanceCalculator.kt`
-
-Done when: all unit tests pass.
-
----
-
 ### SLICE-006 — Expense validator `done`
-**Outcome:** `ExpenseValidator` enforces all 7 validation rules with exact error messages.
-
-Tests to write first (one test per rule):
-- Missing description → error
-- Amount ≤ 0 → error
-- Payer not in member list → "Payer is not a member of this group"
-- Payer not in splits → "The payer must be included in the expense splits"
-- Split user not in member list → "Split user is not a member of this group"
-- Duplicate split user → "Duplicate users found in the expense splits"
-- Split sum ≠ amount (beyond tolerance) → "The sum of all splits must equal..."
-- Valid expense → no errors
-
-Implementation:
-- `domain/ExpenseValidator.kt`
-- Returns `ValidationResult` (sealed class: `Valid` | `Invalid(errors: List<String>)`)
-
-Done when: all validation tests pass with exact error message strings.
 
 ---
 
-## Phase 2 — Persistence
+## Phase 2 — Persistence (done except settlements)
 
 ### SLICE-007 — Database setup and Flyway `done`
-**Outcome:** Flyway manages the schema; a `Database` object provides transaction support.
-
-Tests to write first:
-- Flyway runs `V1__initial_schema.sql` without errors on a fresh PostgreSQL test container
-- Re-running Flyway on an already-migrated DB is idempotent
-
-Implementation:
-- `db/migration/V1__initial_schema.sql` — all tables
-- `persistence/Database.kt` — wraps Exposed + Flyway init
-- `persistence/Tables.kt` — Exposed DSL table definitions
-
-Done when: Flyway migration tests pass; schema matches domain model.
+### SLICE-008 — User repository `done`
+### SLICE-009 — Group repository `done`
+### SLICE-010 — Expense repository `done`
 
 ---
 
-### SLICE-008 — User repository `todo`
-**Outcome:** `UserRepository` can save, find by ID, find by username, find by email.
+## Phase 3 — First working app (vertical slices)
 
-Tests to write first:
-- Save user → can retrieve by ID
-- Find by username (exists / not exists)
-- Find by email (exists / not exists)
-- Unique constraint: duplicate username throws
-
-Implementation:
-- `persistence/UserRepository.kt`
-
-Done when: all repo tests pass against disposable PostgreSQL.
+Each slice below is end-to-end: HTTP handler + service + template + any missing repo.
+By the end of SLICE-V03 the app is fully usable.
 
 ---
 
-### SLICE-009 — Group repository `todo`
-**Outcome:** `GroupRepository` can create groups, add/remove members, find by ID.
+### SLICE-V01 — Register, login, home page `todo`
+
+**Outcome:** A user can sign up, log in, and see a list of groups. This is the first
+slice where a browser can interact with the app end-to-end.
 
 Tests to write first:
-- Create group → retrieve by ID
-- Add member → member appears in group
-- Remove member → member removed
-- Cannot add duplicate member (idempotent or guarded)
-- Find all groups
+- `GET /register` → 200 with form
+- `POST /register` valid → redirect to `/login`, flash "Your account has been created"
+- `POST /register` missing fields → 400 with inline errors
+- `POST /register` duplicate username → "Username already exists"
+- `POST /register` duplicate email → "Email already exists"
+- `POST /register` passwords don't match → "Passwords do not match"
+- Password is BCrypt-hashed in DB
+- `GET /login` → 200 with form
+- `POST /login` valid → session cookie set, redirect to `/`
+- `POST /login` invalid → "Invalid username or password"
+- `GET /logout` → session cleared, redirect to `/`, flash "You have been logged out"
+- `GET /` → 200 with group list and username list
+- `GET /` works without a session cookie (public)
+- Protected route without session → 302 to `/login` with flash
 
 Implementation:
-- `persistence/GroupRepository.kt`
+- `service/UserService.kt` — `register(...)`, `authenticate(...)`
+- `web/AuthHandler.kt` — GET/POST `/register`, GET/POST `/login`, GET `/logout`
+- `web/MainHandler.kt` — GET `/`
+- `web/SessionFilter.kt` — injects `UserId` into request or redirects
+- `templates/base.hbs`, `templates/register.hbs`, `templates/login.hbs`, `templates/index.hbs`
+- BCrypt dependency added to `build.gradle.kts`
 
-Done when: all repo tests pass.
+Done when: all handler tests pass; a real browser can register, log in, and see `/`.
 
 ---
 
-### SLICE-010 — Expense repository `todo`
-**Outcome:** `ExpenseRepository` can create, update, delete expenses with their shares.
+### SLICE-V02 — Group detail page `todo`
+
+**Outcome:** An authenticated user can view a group: its members, expenses, and
+calculated balances. The core value proposition is visible for the first time.
 
 Tests to write first:
-- Create expense with shares → retrieve all shares
-- Update expense → old shares replaced, new ones present
-- Delete expense → shares cascade-deleted
-- Find all expenses for a group
+- `GET /group/{id}` → 200 with members listed
+- `GET /group/{id}` → expenses listed (description, amount, payer)
+- `GET /group/{id}` → balance figures correct against known fixture data
+- `GET /group/{id}` → 404 for non-existent group
+- Unauthenticated → redirect to `/login`
 
 Implementation:
-- `persistence/ExpenseRepository.kt`
-
-Done when: all repo tests pass; cascade delete verified.
-
----
-
-### SLICE-011 — Settlement repository `todo`
-**Outcome:** `SettlementRepository` can record and retrieve settlements by group.
-
-Tests to write first:
-- Record settlement → retrieve by group ID
-- Multiple settlements → returned in descending date order
-- Filter by pair of users within a group
-
-Implementation:
-- `persistence/SettlementRepository.kt`
-
-Done when: all repo tests pass.
-
----
-
-## Phase 3 — Authentication
-
-### SLICE-012 — Register `todo`
-**Outcome:** User can register via `POST /register`.
-
-Tests to write first:
-- Valid registration → 302 redirect to `/login`
-- Missing fields → 400 with inline errors
-- Duplicate username → "Username already exists"
-- Duplicate email → "Email already exists"
-- Passwords don't match → "Passwords do not match"
-- Password is BCrypt-hashed in DB (plain text not stored)
-
-Implementation:
-- `service/UserService.kt` — `register(...)`
-- `web/AuthHandler.kt` — GET/POST `/register`
-- `templates/register.hbs`, `templates/base.hbs`
-
-Done when: all handler tests pass.
-
----
-
-### SLICE-013 — Login and logout `todo`
-**Outcome:** User can log in and log out.
-
-Tests to write first:
-- Valid credentials → session cookie set, redirect to `/`
-- Invalid credentials → "Invalid username or password"
-- Logout → session cleared, redirect to `/`
-
-Implementation:
-- `UserService.authenticate(...)`
-- `web/AuthHandler.kt` — GET/POST `/login`, GET `/logout`
-- `templates/login.hbs`
-
-Done when: all handler tests pass.
-
----
-
-### SLICE-014 — Session filter `todo`
-**Outcome:** All protected routes require a valid session.
-
-Tests to write first:
-- `GET /group/create` without session → 302 to `/login` with flash message
-- `GET /group/create` with session → 200
-- `GET /group/{id}/add_expense` without session → 302 to `/login`
-
-Implementation:
-- `web/SessionFilter.kt` — reads cookie, injects `UserId` into request or redirects
-- Applied in `SplitwiseApp` router to all non-public routes
-
-Done when: all auth filter tests pass.
-
----
-
-## Phase 4 — Read-only views
-
-### SLICE-015 — Home page `todo`
-**Outcome:** `GET /` renders a list of groups and users without requiring login.
-
-Tests to write first:
-- Response is 200
-- Group names are present in the HTML
-- Usernames are present in the HTML
-- Works without a session cookie
-
-Implementation:
-- `web/MainHandler.kt`
-- `templates/index.hbs`
-
-Done when: handler tests pass with fixture data.
-
----
-
-### SLICE-016 — Group detail page `todo`
-**Outcome:** `GET /group/{id}` shows members, expenses, and balances.
-
-Tests to write first:
-- 200 with members listed
-- 200 with expenses listed
-- Balance section present
-- Balance figures correct against known fixture data
-- 404 for non-existent group
-
-Implementation:
-- `service/BalanceService.kt` — wires `BalanceCalculator` + repos
+- `service/BalanceService.kt` — wires `BalanceCalculator` + `ExpenseRepository` + `SettlementRepository`
+- `persistence/SettlementRepository.kt` — built here, only when needed
 - `web/GroupHandler.kt` — GET `/group/{id}`
 - `templates/group.hbs`
 
-Done when: all handler tests pass including balance assertion.
+Done when: handler tests pass including correct balance figures.
 
 ---
 
-## Phase 5 — Group management
+### SLICE-V03 — Create group and add expense `todo`
 
-### SLICE-017 — Create group `todo`
-**Outcome:** Authenticated user can create a group and becomes its creator and first member.
+**Outcome:** An authenticated user can create a group and add an expense. The app
+is now fully usable end-to-end for the happy path.
 
 Tests to write first:
 - `GET /group/create` → 200
-- `POST /group/create` valid → redirect to group page
+- `POST /group/create` valid → redirect to `/group/{id}`, flash "Group created successfully"
 - `POST /group/create` missing name → "Group name is required"
 - Creator is a member of the new group
+- `GET /group/{id}/add_expense` → 200 (member only)
+- `POST /group/{id}/add_expense` valid → expense + shares saved, redirect to group page
+- `POST /group/{id}/add_expense` — all 7 validation rules (see SLICE-006)
+- Non-member cannot access add expense page
 
 Implementation:
 - `service/GroupService.kt` — `createGroup(...)`
+- `service/ExpenseService.kt` — `addExpense(...)`
 - `web/GroupHandler.kt` — GET/POST `/group/create`
-- `templates/create_group.hbs`
+- `web/ExpenseHandler.kt` — GET/POST `/group/{id}/add_expense`
+- `templates/create_group.hbs`, `templates/add_expense.hbs`
 
-Done when: all handler tests pass.
+Done when: all handler tests pass; a user can complete the full register → create
+group → add expense flow in a browser.
 
 ---
 
-### SLICE-018 — Edit group `todo`
-**Outcome:** Group creator can rename the group and add members via the edit form.
+## Phase 4 — Group and expense management
+
+### SLICE-V04 — Edit group and manage members `todo`
+
+**Outcome:** Group creator can rename the group, add members, and remove members.
 
 Tests to write first:
-- Creator can access edit page
-- Non-creator redirected with permission error
-- Valid edit → name/description updated, redirect to group page
+- `GET /group/{id}/edit` → 200 for creator; redirect + flash for non-creator
+- `POST /group/{id}/edit` valid → name/description updated, redirect to group page
 - Add member via edit form → member appears in group
 - Add non-existent user → "User not found"
 - Add existing member → "User is already a member"
+- `POST /group/{id}/add_member` valid → member added, redirect
+- `POST /group/{id}/remove_member/{userId}` → member removed
+- Cannot remove creator → "Cannot remove the group creator"
+- Non-creator attempt → permission error
 
 Implementation:
-- `GroupService.editGroup(...)`, `GroupService.addMember(...)`
-- `web/GroupHandler.kt` — GET/POST `/group/{id}/edit`
+- `GroupService.editGroup(...)`, `GroupService.addMember(...)`, `GroupService.removeMember(...)`
+- `web/GroupHandler.kt` — GET/POST `/group/{id}/edit`, POST `/group/{id}/add_member`,
+  POST `/group/{id}/remove_member/{userId}`
 - `templates/edit_group.hbs`
 
 Done when: all handler tests pass.
 
 ---
 
-### SLICE-019 — Add/remove member `todo`
-**Outcome:** Group creator can add and remove members via dedicated POST routes.
+### SLICE-V05 — Edit and delete expense `todo`
+
+**Outcome:** Expense payer or group creator can edit or delete an expense.
 
 Tests to write first:
-- Add valid user → member added
-- Add non-existent user → "User not found"
-- Add existing member → flash info
-- Remove member → member gone
-- Cannot remove creator → "Cannot remove the group creator"
-- Non-creator attempt → permission error
-
-Implementation:
-- `GroupService.removeMember(...)`
-- `web/GroupHandler.kt` — POST `/group/{id}/add_member`, POST `/group/{id}/remove_member/{userId}`
-
-Done when: all handler tests pass.
-
----
-
-## Phase 6 — Add expense
-
-### SLICE-020 — Add expense form and submission `todo`
-**Outcome:** Group member can add an expense with full validation.
-
-Tests to write first (one per validation rule):
-- Non-member cannot access add expense page
-- All 7 validation rules exercised (see SLICE-006 for rule list)
-- Valid submission → expense + shares persisted, redirect to group page
-- Form re-renders with errors on failure
-
-Implementation:
-- `service/ExpenseService.kt` — `addExpense(...)`
-- `web/ExpenseHandler.kt` — GET/POST `/group/{id}/add_expense`
-- `templates/add_expense.hbs`
-
-Done when: all handler tests pass, validation error messages match spec.
-
----
-
-## Phase 7 — Edit and delete expense
-
-### SLICE-021 — Edit expense `todo`
-**Outcome:** Expense payer or group creator can edit an expense.
-
-Tests to write first:
-- Payer can access edit page
-- Group creator can access edit page
-- Other authenticated user → 403
-- Unauthenticated → redirect to login
-- Valid edit → shares replaced, redirect to group page
+- `GET /expenses/{id}/edit` → 200 for payer or creator; 403 for others; redirect for unauthenticated
+- `POST /expenses/{id}/edit` valid → shares replaced atomically, redirect to group page
 - Same 7 validation rules enforced
+- `POST /expenses/{id}/delete` → expense + shares deleted, redirect to group page
+- Non-payer/non-creator → 403
 - 404 for non-existent expense
 
 Implementation:
-- `ExpenseService.editExpense(...)`
-- `web/ExpenseHandler.kt` — GET/POST `/expenses/{id}/edit`
+- `ExpenseService.editExpense(...)`, `ExpenseService.deleteExpense(...)`
+- `web/ExpenseHandler.kt` — GET/POST `/expenses/{id}/edit`, POST `/expenses/{id}/delete`
 - `templates/edit_expense.hbs`
-
-Done when: all handler tests pass.
-
----
-
-### SLICE-022 — Delete expense `todo`
-**Outcome:** Expense payer or group creator can delete an expense.
-
-Tests to write first:
-- Payer can delete
-- Group creator can delete
-- Other user → 403
-- Shares are cascade-deleted
-- Balance recalculates after deletion
-
-Implementation:
-- `ExpenseService.deleteExpense(...)`
-- `web/ExpenseHandler.kt` — POST `/expenses/{id}/delete`
 
 Done when: all handler tests pass; cascade delete verified.
 
 ---
 
-## Phase 8 — Settlements
+## Phase 5 — Settlements
 
-### SLICE-023 — Record settlement `todo`
-**Outcome:** Group member can record a settlement between two group members.
+### SLICE-V06 — Record settlement and settlement history `todo`
+
+**Outcome:** Group member can record a settlement and view settlement history.
+Balances on the group page reflect settlements.
 
 Tests to write first:
-- Valid settlement → persisted, redirect to group page
+- `POST /group/{id}/settle` valid → settlement persisted, redirect to group page
 - Non-member cannot record settlement
 - Amount must be > 0
 - `from_user_id == to_user_id` → validation error
 - Either user not a group member → validation error
-
-Implementation:
-- `service/SettlementService.kt` — `record(...)`
-- `web/SettlementHandler.kt` — POST `/group/{id}/settle`
-- Settlement form on `group.hbs`
-
-Done when: all handler tests pass.
-
----
-
-### SLICE-024 — Settlement history `todo`
-**Outcome:** Group member can view all settlements for a group.
-
-Tests to write first:
-- `GET /group/{id}/settlements` → 200 with settlement list
-- Settlements ordered by date descending
-- Non-member cannot view
-
-Implementation:
-- `SettlementService.forGroup(...)`
-- `web/SettlementHandler.kt` — GET `/group/{id}/settlements`
-- `templates/settlements.hbs`
-
-Done when: all handler tests pass.
-
----
-
-### SLICE-025 — Balances reflect settlements `todo`
-**Outcome:** `BalanceCalculator` output (already settlement-aware from SLICE-005) is
-confirmed end-to-end: group detail page balances change after a settlement is recorded.
-
-Tests to write first:
-- Record settlement between A and B → balance on group page decreases by settlement amount
+- `GET /group/{id}/settlements` → 200 with list in descending date order
+- Non-member cannot view settlement history
+- Record settlement → balance on group page decreases
 - Full settlement → no balance shown for that pair
 
 Implementation:
-- Acceptance test through the HTTP layer (register → create group → add expense → settle → check group page)
+- `service/SettlementService.kt` — `record(...)`, `forGroup(...)`
+- `web/SettlementHandler.kt` — POST `/group/{id}/settle`, GET `/group/{id}/settlements`
+- Settlement form on `group.hbs`, `templates/settlements.hbs`
 
-Done when: end-to-end acceptance test passes.
+Done when: all handler tests pass; end-to-end balance test passes.
 
 ---
 
-## Phase 9 — Hardening
+## Phase 6 — Hardening
 
-### SLICE-026 — Error pages `todo`
+### SLICE-V07 — Error pages `todo`
+
 **Outcome:** 400/403/404/500 return styled HTML pages, not stack traces.
 
 Tests to write first:
@@ -502,7 +216,8 @@ Done when: tests pass; no stack traces visible to end user.
 
 ---
 
-### SLICE-027 — Config and deployment `todo`
+### SLICE-V08 — Config and deployment `todo`
+
 **Outcome:** App is configurable via environment variables and can be deployed.
 
 Tests to write first:
@@ -510,39 +225,25 @@ Tests to write first:
 
 Implementation:
 - `config/AppConfig.kt` — reads `DATABASE_URL`, `PORT`, `SESSION_SECRET`
-- `Procfile` or `Dockerfile` for Kotlin app
+- `Procfile` or `Dockerfile`
 - Update `render.yaml` to include Kotlin app service
 
 Done when: `./gradlew run` boots with defaults; all existing tests still pass.
 
 ---
 
-### SLICE-028 — PWA manifest and icons `todo`
-**Outcome:** The app is installable with a valid manifest and application icons.
+### SLICE-V09 — PWA manifest and service worker `todo`
+
+**Outcome:** App is installable and caches the app shell for faster repeat visits.
 
 Tests to write first:
-- `GET /manifest.webmanifest` returns `200` with valid web manifest content type
-- Manifest includes app name, start URL, display mode, and icon entries
+- `GET /manifest.webmanifest` → 200 with valid content type
+- Manifest includes name, start URL, display mode, icon entries
+- `GET /service-worker.js` → 200
 
 Implementation:
 - `src/main/resources/public/manifest.webmanifest`
-- App icons for install surfaces
-- Static asset routing for manifest and icons
-
-Done when: browser install prompts recognize the app as installable.
-
----
-
-### SLICE-029 — Service worker for app shell caching `todo`
-**Outcome:** Static assets and app shell resources are cached for repeat visits.
-
-Tests to write first:
-- `GET /service-worker.js` returns `200`
-- Service worker registers from the base layout
-
-Implementation:
 - `src/main/resources/public/service-worker.js`
-- Base template registration script
-- Conservative online-first caching strategy for static assets only
+- Static asset routing; base template registration script
 
-Done when: the app reloads quickly after first visit and remains online-first for writes.
+Done when: browser install prompts recognise the app as installable.
