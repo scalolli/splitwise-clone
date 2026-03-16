@@ -88,7 +88,7 @@ Use descriptive names that read as behavior statements:
 
 - DB-backed tests require Docker locally
 - Recommended implementation: Testcontainers PostgreSQL
-- If Docker is unavailable, only pure unit tests should be considered runnable
+- If Docker is unavailable, the full test suite should fail fast rather than silently skip DB-backed coverage
 
 ---
 

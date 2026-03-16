@@ -10,7 +10,9 @@ The next agent (or human) picks up exactly from "Next action".
 The root Gradle project exists with a working `GET /health` endpoint and a dedicated
 Kotlin GitHub Actions workflow. The pure domain layer now includes `Money`, typed core
 entities, `BalanceCalculator`, and `ExpenseValidator`, all covered by unit tests. The
-docs remain aligned to a server-rendered PWA backed by centrally hosted PostgreSQL.
+project now also has shared PostgreSQL Testcontainers wiring plus Flyway/Exposed-backed
+database bootstrap and initial schema coverage. The docs remain aligned to a
+server-rendered PWA backed by centrally hosted PostgreSQL.
 
 ## What was done
 
@@ -33,19 +35,21 @@ docs remain aligned to a server-rendered PWA backed by centrally hosted PostgreS
 - Completed `SLICE-004` — core domain entities with typed IDs
 - Completed `SLICE-005` — `BalanceCalculator` with settlement-aware netting
 - Completed `SLICE-006` — `ExpenseValidator` and `ValidationResult`
+- Completed `SLICE-002A` — PostgreSQL Testcontainers support and DB smoke tests
+- Completed `SLICE-007` — Flyway-backed database bootstrap, schema migration, and tables
+- Tightened DB-backed tests so missing Docker now fails the suite instead of skipping coverage
 - Revised the architecture docs to use PostgreSQL, server-rendered PWA delivery, and
   containerized Postgres for DB-backed tests
 
 ## Next action
 
-**Start SLICE-002A: Postgres test infrastructure.**
+**Start SLICE-008: User repository.**
 
-1. Read `docs/http4k-rewrite/04-iteration-backlog.md` SLICE-002A and SLICE-007 in full.
-2. Add the failing PostgreSQL container smoke tests first.
-3. Add Testcontainers PostgreSQL support and shared test wiring.
-4. Verify DB-backed tests run locally via Docker and keep `./gradlew test` green.
-5. Commit the green slice.
-6. Move to `SLICE-007` immediately after the shared DB test harness is in place.
+1. Read `docs/http4k-rewrite/04-iteration-backlog.md` SLICE-008 in full.
+2. Add failing repository integration tests for save/find-by-id/find-by-username/find-by-email.
+3. Add the duplicate-username constraint test against disposable PostgreSQL.
+4. Implement `UserRepository` against the shared `Database` and `UsersTable` wiring.
+5. Keep `./gradlew test` green and commit the slice.
 
 ## Slice status
 
@@ -53,12 +57,12 @@ docs remain aligned to a server-rendered PWA backed by centrally hosted PostgreS
 |---|---|---|
 | SLICE-001 | Gradle project scaffold | `done` |
 | SLICE-002 | Kotlin CI pipeline | `done` |
-| SLICE-002A | Postgres test infrastructure | `todo` |
+| SLICE-002A | Postgres test infrastructure | `done` |
 | SLICE-003 | Money value object | `done` |
 | SLICE-004 | Core domain entities | `done` |
 | SLICE-005 | Balance calculator | `done` |
 | SLICE-006 | Expense validator | `done` |
-| SLICE-007 | Database setup and Flyway | `todo` |
+| SLICE-007 | Database setup and Flyway | `done` |
 | SLICE-008 | User repository | `todo` |
 | SLICE-009 | Group repository | `todo` |
 | SLICE-010 | Expense repository | `todo` |

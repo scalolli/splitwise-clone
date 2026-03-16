@@ -26,6 +26,9 @@ The app starts on port `8080` by default.
 ./gradlew test
 ```
 
+DB-backed integration tests use Testcontainers and require Docker to be available.
+If Docker is unavailable, `./gradlew test` fails rather than skipping those tests.
+
 ## Project Structure
 
 ```text
