@@ -8,8 +8,9 @@ The next agent (or human) picks up exactly from "Next action".
 ## Current state
 
 The root Gradle project exists with a working `GET /health` endpoint and a dedicated
-Kotlin GitHub Actions workflow. The docs have now been realigned to a server-rendered
-PWA backed by centrally hosted PostgreSQL.
+Kotlin GitHub Actions workflow. The pure domain layer now includes `Money`, typed core
+entities, `BalanceCalculator`, and `ExpenseValidator`, all covered by unit tests. The
+docs remain aligned to a server-rendered PWA backed by centrally hosted PostgreSQL.
 
 ## What was done
 
@@ -28,19 +29,23 @@ PWA backed by centrally hosted PostgreSQL.
 - Updated `Readme.md` — added rewrite section pointing to docs
 - Completed `SLICE-001` — root Gradle scaffold with health endpoint
 - Completed `SLICE-002` — Kotlin GitHub Actions workflow
+- Completed `SLICE-003` — `Money` value object
+- Completed `SLICE-004` — core domain entities with typed IDs
+- Completed `SLICE-005` — `BalanceCalculator` with settlement-aware netting
+- Completed `SLICE-006` — `ExpenseValidator` and `ValidationResult`
 - Revised the architecture docs to use PostgreSQL, server-rendered PWA delivery, and
   containerized Postgres for DB-backed tests
 
 ## Next action
 
-**Start SLICE-003: Money value object.**
+**Start SLICE-002A: Postgres test infrastructure.**
 
-1. Read `docs/http4k-rewrite/04-iteration-backlog.md` SLICE-003 entry in full.
-2. Write the failing `Money` tests first.
-3. Implement the minimal `Money` value object.
-4. Verify `./gradlew test` passes.
+1. Read `docs/http4k-rewrite/04-iteration-backlog.md` SLICE-002A and SLICE-007 in full.
+2. Add the failing PostgreSQL container smoke tests first.
+3. Add Testcontainers PostgreSQL support and shared test wiring.
+4. Verify DB-backed tests run locally via Docker and keep `./gradlew test` green.
 5. Commit the green slice.
-6. Keep `SLICE-002A` in mind as the next foundation task before persistence work.
+6. Move to `SLICE-007` immediately after the shared DB test harness is in place.
 
 ## Slice status
 
@@ -49,10 +54,10 @@ PWA backed by centrally hosted PostgreSQL.
 | SLICE-001 | Gradle project scaffold | `done` |
 | SLICE-002 | Kotlin CI pipeline | `done` |
 | SLICE-002A | Postgres test infrastructure | `todo` |
-| SLICE-003 | Money value object | `todo` |
-| SLICE-004 | Core domain entities | `todo` |
-| SLICE-005 | Balance calculator | `todo` |
-| SLICE-006 | Expense validator | `todo` |
+| SLICE-003 | Money value object | `done` |
+| SLICE-004 | Core domain entities | `done` |
+| SLICE-005 | Balance calculator | `done` |
+| SLICE-006 | Expense validator | `done` |
 | SLICE-007 | Database setup and Flyway | `todo` |
 | SLICE-008 | User repository | `todo` |
 | SLICE-009 | Group repository | `todo` |
