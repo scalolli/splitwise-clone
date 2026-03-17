@@ -1,4 +1,4 @@
-name: Kotlin CI
+name: Splitwise-Clone CI
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [ main, develop ]
 
 jobs:
-  kotlin-test:
+  test:
     runs-on: ubuntu-latest
 
     steps:
@@ -29,7 +29,7 @@ jobs:
         run: ./gradlew test
 
   publish:
-    needs: kotlin-test
+    needs: test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
