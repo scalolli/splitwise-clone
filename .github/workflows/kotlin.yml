@@ -77,17 +77,16 @@ jobs:
         run: |
           echo "Waiting for deploy to start..."
           sleep 10
-          RAW=$(curl --silent \
+          DEPLOY_ID=$(curl --silent \
             -H "Authorization: Bearer $RENDER_API_KEY" \
-            "https://api.render.com/v1/services/$SERVICE_ID/deploys?limit=1")
-          echo "Raw API response: $RAW"
-          DEPLOY_ID=$(echo "$RAW" | jq -r '.[0].deploy.id')
+            "https://api.render.com/v1/services/$SERVICE_ID/deploys?limit=1" \
+            | jq -r '.[0].deploy.id')
           echo "Polling deploy $DEPLOY_ID..."
           for i in $(seq 1 30); do
             STATUS=$(curl --silent \
               -H "Authorization: Bearer $RENDER_API_KEY" \
               "https://api.render.com/v1/services/$SERVICE_ID/deploys/$DEPLOY_ID" \
-              | jq -r '.deploy.status')
+              | jq -r '.status')
             echo "Attempt $i: status=$STATUS"
             case "$STATUS" in
               live)
