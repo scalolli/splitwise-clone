@@ -3,6 +3,8 @@ services:
     name: splitwise-clone
     env: docker
     plan: free
+    image:
+      url: ghcr.io/scalolli/splitwise-clone:latest
     envVars:
       - key: JDBC_URL
         fromDatabase:
