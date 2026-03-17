@@ -21,13 +21,14 @@ The next agent (or human) picks up exactly from "Next action".
 | Expense repository | `persistence/ExpenseRepository.kt` | `create`, `findById`, `findByGroup`, `update`, `delete`; all tests pass |
 | User service | `service/UserService.kt` | `register` (BCrypt hash, validation) + `authenticate`; used by AuthHandler |
 | Session filter | `web/SessionFilter.kt` | Reads `session` cookie (value = userId Long); redirects to `/login` if absent |
-| Auth handler | `web/AuthHandler.kt` | `GET/POST /register`, `GET/POST /login`, `GET /logout`; flash cookie for messages |
+| Auth handler | `web/AuthHandler.kt` | `GET/POST /register`, `GET/POST /login`, `POST /logout`; flash cookie for messages; session `maxAge=86400` (1 day); logout redirects to `/login` |
 | Main handler | `web/MainHandler.kt` | `GET /`; lists all groups and users via Handlebars template |
 | App factory | `web/AppFactory.kt` | `buildApp(userRepository, groupRepository)` — wires all handlers; used by tests and `App.kt` |
-| Templates | `src/main/resources/register.hbs`, `login.hbs`, `index.hbs`, `base.hbs` | Handlebars classpath templates |
+| Templates | `src/main/resources/register.hbs`, `login.hbs`, `index.hbs`, `base.hbs` | Handlebars classpath templates; `index.hbs` and `base.hbs` have POST logout form button; register/login links removed from authenticated nav |
 | Test infrastructure | `test/persistence/PostgresTestSupport.kt` | Singleton Testcontainers container; `freshDatabase()` for a migrated `Database` |
 | DB smoke tests | `test/persistence/DatabaseIntegrationSmokeTest.kt` | Verifies connection and Flyway idempotency |
-| CI | `.github/workflows/kotlin.yml` | Runs `./gradlew test` on `ubuntu-latest` (Docker available); green |
+| CI/CD | `.github/workflows/kotlin.yml`, `Dockerfile`, `render.yaml` | `test` + `publish` jobs; Docker image pushed to ghcr.io; Render deploy hook wired; `production` environment secret configured; docker actions bumped to Node.js 24 compatible versions (`login-action@v4`, `build-push-action@v7`) |
+| Security | `web/SessionToken.kt`, `web/SessionFilter.kt`, `web/AuthHandler.kt`, `service/UserService.kt`, `domain/User.kt`, `persistence/UserRepository.kt` | HMAC-SHA256 signed session token, password/email validation, secure cookie attributes, no passwordHash on domain model, hardcoded DB credentials removed |
 | Local dev DB | `docker-compose.yml` | `docker compose up -d` starts Postgres on `5432`; credentials `splitwise/splitwise/splitwise` |
 
 **Not yet started:** settlement repository, group detail page, create group/expense forms, edit/delete flows, error pages, deployment config, PWA assets.
@@ -37,6 +38,10 @@ The next agent (or human) picks up exactly from "Next action".
 ## Next action
 
 **Start SLICE-V02: Group detail page.**
+
+CI/CD pipeline is verified and working end-to-end. Deployment to Render is confirmed.
+
+### SLICE-V02: Group detail page
 
 1. Read SLICE-V02 in `04-iteration-backlog.md`.
 2. Write failing tests first: `GET /group/:id` renders group name, member list, expense list, and net balances.
@@ -61,6 +66,8 @@ The next agent (or human) picks up exactly from "Next action".
 | SLICE-009 | Group repository | `done` |
 | SLICE-010 | Expense repository | `done` |
 | SLICE-V01 | Register, login, home page | `done` |
+| SLICE-SEC | Security hardening | `done` |
+| SLICE-DEPLOY | CI/CD + Render deployment | `done` |
 | SLICE-V02 | Group detail page | `todo` |
 | SLICE-V03 | Create group and add expense | `todo` |
 | SLICE-V04 | Edit group and manage members | `todo` |
@@ -80,6 +87,13 @@ The next agent (or human) picks up exactly from "Next action".
 | `docs/http4k-rewrite/06-decisions.md` | Locked ADRs — check before making any architectural choice |
 | `docs/http4k-rewrite/08-functionality-checklist.md` | Consolidated functionality checklist |
 | `docs/http4k-rewrite/05-testing-strategy.md` | Postgres/Testcontainers testing approach |
+
+## Notes from this session
+
+- Logout button added as `POST /logout` form in `index.hbs` and `base.hbs` — a `<a href="/logout">` (GET) would not match the POST route.
+- `HandlebarsTemplates().CachingClasspath()` caches templates at startup — template changes require a server restart to take effect.
+- Session cookie `maxAge` set to 86400 (1 day). The token is stateless (HMAC-signed), so there is no server-side revocation. Cookie theft risk is low in practice due to `httpOnly`, `secure`, and `sameSite=Strict`. If revocation is needed in future (force-logout, password reset), a server-side session store (DB or in-memory map) would be required.
+- GitHub Actions docker actions bumped: `checkout@v4`, `login-action@v4`, `build-push-action@v7` — Node.js 24 compatible, avoids deprecation warnings from June 2026.
 
 ## Notes from SLICE-V01
 
