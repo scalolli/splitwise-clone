@@ -20,54 +20,64 @@ The next agent (or human) picks up exactly from "Next action".
 | Group repository | `persistence/GroupRepository.kt` | `create`, `findById`, `findAll`, `findByMember`, `addMember`, `removeMember`; all tests pass |
 | Expense repository | `persistence/ExpenseRepository.kt` | `create`, `findById`, `findByGroup`, `update`, `delete`; all tests pass |
 | User service | `service/UserService.kt` | `register` (BCrypt hash, validation) + `authenticate`; used by AuthHandler |
+| Group service | `service/GroupService.kt` | `createGroup(name, creatorId): Group` — delegates to GroupRepository |
+| Expense service | `service/ExpenseService.kt` | `addExpense(...)` — validates via ExpenseValidator, saves via ExpenseRepository; returns `Result<Expense>`; throws `ValidationException` on invalid |
 | Session filter | `web/SessionFilter.kt` | Reads `session` cookie (value = userId Long); redirects to `/login` if absent |
 | Auth handler | `web/AuthHandler.kt` | `GET/POST /register`, `GET/POST /login`, `POST /logout`; flash cookie for messages; session `maxAge=86400` (1 day); logout redirects to `/login`; cleared cookie now mirrors secure attributes |
 | Main handler | `web/MainHandler.kt` | `GET /`; only shows groups the current user belongs to |
 | Settlement repository | `persistence/SettlementRepository.kt` | `create`, `findByGroup`; used by BalanceService |
 | Balance service | `service/BalanceService.kt` | wires `BalanceCalculator` + `ExpenseRepository` + `SettlementRepository` |
-| Group handler | `web/GroupHandler.kt` | `GET /group/{id}`: 200 with members/expenses/balances, 403 for authenticated non-members, 404 for unknown group, 302 to `/login` if unauthenticated |
-| App factory | `web/AppFactory.kt` | `buildApp(userRepository, groupRepository, expenseRepository, settlementRepository)` — all four repos now required; `/group/create` placeholder restored as protected route |
+| Group handler | `web/GroupHandler.kt` | `GET /group/{id}`: 200 with members/expenses/balances, 403 for authenticated non-members, 404 for unknown group, 302 to `/login` if unauthenticated; `GET/POST /group/create`: form renders with CSRF, POST validates name, creates group, redirects to `/group/{id}` with flash |
+| Expense handler | `web/ExpenseHandler.kt` | NEW: `GET/POST /group/{id}/add_expense`: member-only (403 for non-members), validates all 7 rules via ExpenseValidator, saves expense + shares, redirects to group page with flash |
+| Form body parser | `web/FormBodyParser.kt` | NEW: `parseFormBody(body)` — parses URL-encoded body to `Map<String, List<String>>`; handles repeated keys (for splits) |
+| App factory | `web/AppFactory.kt` | `buildApp(...)` — placeholder `/group/create` removed; real groupHandler + expenseHandler wired |
+| Templates | `src/main/resources/create_group.hbs` | NEW: create group form with CSRF hidden field and inline error list |
+| Templates | `src/main/resources/add_expense.hbs` | NEW: add expense form with payer select, per-member split inputs, CSRF hidden field, error list |
 | Templates | `src/main/resources/group.hbs` added | Renders group name, member list, expense table (description/amount/payer), balance list |
-| Templates | `src/main/resources/register.hbs`, `login.hbs`, `index.hbs`, `base.hbs` | Handlebars classpath templates; `index.hbs` and `base.hbs` have POST logout form button; register/login links removed from authenticated nav; home no longer shows a global users list; all forms include `<input type="hidden" name="_csrf" value="{{csrfToken}}">` |
+| Templates | `src/main/resources/register.hbs`, `login.hbs`, `index.hbs`, `base.hbs` | Handlebars classpath templates; all forms include `<input type="hidden" name="_csrf" value="{{csrfToken}}">` |
 | Test infrastructure | `test/persistence/PostgresTestSupport.kt` | Singleton Testcontainers container; `freshDatabase()` for a migrated `Database` |
 | DB smoke tests | `test/persistence/DatabaseIntegrationSmokeTest.kt` | Verifies connection and Flyway idempotency |
-| CI/CD | `.github/workflows/kotlin.yml`, `Dockerfile`, `render.yaml` | `test` + `publish` jobs; Docker image pushed to ghcr.io; Render deploy hook triggers deploy; workflow polls Render API until `live` or `failed`; all actions on latest Node.js 24 compatible versions (`checkout@v6`, `login-action@v4`, `build-push-action@v7`) |
-| Security | `web/SessionToken.kt`, `web/SessionFilter.kt`, `web/AuthHandler.kt`, `web/CsrfToken.kt`, `web/CsrfFilter.kt`, `service/UserService.kt`, `domain/User.kt`, `persistence/UserRepository.kt` | HMAC-SHA256 signed session token, password/email validation, secure cookie attributes, no passwordHash on domain model, hardcoded DB credentials removed, CSRF double-submit cookie on all POST routes |
+| CI/CD | `.github/workflows/kotlin.yml`, `Dockerfile`, `render.yaml` | `test` + `publish` jobs; Docker image pushed to ghcr.io; Render deploy hook triggers deploy |
+| Security | `web/SessionToken.kt`, `web/SessionFilter.kt`, `web/AuthHandler.kt`, `web/CsrfToken.kt`, `web/CsrfFilter.kt`, `service/UserService.kt` | HMAC-SHA256 signed session token, password/email validation, secure cookie attributes, CSRF double-submit cookie on all POST routes |
 | Local dev DB | `docker-compose.yml` | `docker compose up -d` starts Postgres on `5432`; credentials `splitwise/splitwise/splitwise` |
 
-**Known gaps to fix next:** None — CSRF is done. Ready to start SLICE-V03.
+**Known gaps:** None. SLICE-V03 is complete. Ready to start SLICE-V04.
 
-**Not yet started:** create group/expense forms, edit/delete flows, error pages, deployment config, PWA assets.
+**Not yet started:** edit/delete group, edit/delete expense, settlements, error pages, deployment config, PWA assets.
 
 ---
 
 ## Next action
 
-**Start SLICE-V03: Create group and add expense.**
+**Start SLICE-V04: Edit group and manage members.**
 
-All tests green. Latest commit: `9c9b68f fix: add CSRF protection to all POST routes`.
+All tests green. 107 tests passing. Latest slice: `SLICE-V03 done`.
 
-### SLICE-V03 plan (from `04-iteration-backlog.md`)
+### SLICE-V04 plan (from `04-iteration-backlog.md`)
 
-Write failing tests first:
-- `GET /group/create` → 200
-- `POST /group/create` valid → redirect to `/group/{id}`, flash "Group created successfully"
-- `POST /group/create` missing name → 400 with "Group name is required"
-- Creator is automatically a member of the new group
-- `GET /group/{id}/add_expense` → 200 (member only)
-- `POST /group/{id}/add_expense` valid → expense + shares saved, redirect to group page
-- `POST /group/{id}/add_expense` — all 7 validation rules from `ExpenseValidator`
-- Non-member cannot access `GET /group/{id}/add_expense` (403)
+Write failing tests first (`EditGroupHandlerTest.kt`):
+- `GET /group/{id}/edit` → 200 for creator
+- `GET /group/{id}/edit` → redirect + flash for non-creator
+- `GET /group/{id}/edit` → redirect to `/login` for unauthenticated
+- `POST /group/{id}/edit` valid → name updated, redirect to `/group/{id}` with flash "Group updated successfully"
+- `POST /group/{id}/edit` by non-creator → redirect + flash "You do not have permission to edit this group"
+- `POST /group/{id}/add_member` valid → member added, redirect with flash "Member added successfully"
+- `POST /group/{id}/add_member` non-existent user → flash "User not found"
+- `POST /group/{id}/add_member` already a member → flash "User is already a member of this group"
+- `POST /group/{id}/add_member` non-creator → redirect + flash "You do not have permission to add members to this group"
+- `POST /group/{id}/remove_member/{userId}` → member removed, redirect + flash "Member removed successfully"
+- `POST /group/{id}/remove_member/{userId}` → cannot remove creator, flash "Cannot remove the group creator"
+- `POST /group/{id}/remove_member/{userId}` non-creator → flash "You do not have permission to remove members from this group"
 
-All POST tests must use `TestHelpers.getCsrfToken()` + `Cookie("csrf", ...)` pattern established in this session.
+All POST tests must use `TestHelpers.getCsrfToken(app, "/group/{id}/edit", sessionCookie)` + `Cookie("csrf", ...)` pattern.
 
 Implementation order:
-1. `service/GroupService.kt` — `createGroup(name, creatorId): Group`
-2. `service/ExpenseService.kt` — `addExpense(...): Expense`
-3. `web/GroupHandler.kt` — add `GET/POST /group/create` routes
-4. `web/ExpenseHandler.kt` — `GET/POST /group/{id}/add_expense`
-5. `templates/create_group.hbs`, `templates/add_expense.hbs`
-6. Wire into `AppFactory.kt`
+1. Add `GroupRepository.update(id, name)` (or `update(id, name, description)`)
+2. `GroupService.editGroup(id, name, requesterId): Result<Group>` — creator-only, updates name
+3. `GroupService.addMember(id, username, requesterId): Result<Unit>` — creator-only, validates user exists + not already member
+4. `GroupService.removeMember(id, targetUserId, requesterId): Result<Unit>` — creator-only, blocks removing creator
+5. `web/GroupHandler.kt` — add `GET/POST /group/{id}/edit`, `POST /group/{id}/add_member`, `POST /group/{id}/remove_member/{userId}`
+6. `templates/edit_group.hbs`
 
 ## Slice status
 
@@ -89,7 +99,7 @@ Implementation order:
 | SLICE-DEPLOY | CI/CD + Render deployment | `done` |
 | SLICE-V02 | Group detail page | `done` |
 | SLICE-CSRF | CSRF hardening | `done` |
-| SLICE-V03 | Create group and add expense | `todo` |
+| SLICE-V03 | Create group and add expense | `done` |
 | SLICE-V04 | Edit group and manage members | `todo` |
 | SLICE-V05 | Edit and delete expense | `todo` |
 | SLICE-V06 | Record settlement and history | `todo` |
@@ -108,44 +118,30 @@ Implementation order:
 | `docs/http4k-rewrite/08-functionality-checklist.md` | Consolidated functionality checklist |
 | `docs/http4k-rewrite/05-testing-strategy.md` | Postgres/Testcontainers testing approach |
 
+## Notes from SLICE-V03
+
+- `GroupService` and `ExpenseService` are thin coordinators: no business logic beyond delegation to `ExpenseValidator` (in `ExpenseService`) and `GroupRepository` (in `GroupService`).
+- `ExpenseService.addExpense` returns `Result<Expense>`: `Result.success(expense)` on valid, `Result.failure(ValidationException(errors))` on invalid. Handler uses `.fold(onSuccess, onFailure)`.
+- `ValidationException(errors: List<String>)` lives in `service/ExpenseService.kt`. If more services need it in future, move to a shared `service/` file.
+- `FormBodyParser.kt` — package-level `parseFormBody(body: String): Map<String, List<String>>`. Handles repeated keys needed for split arrays (`split_user_id`, `split_amount`). Used by `GroupHandler` (POST /group/create) and `ExpenseHandler` (POST /group/{id}/add_expense). Do NOT use http4k `webForm` lenses for forms with repeated keys.
+- `TestHelpers.getCsrfToken` now accepts an optional `sessionCookie: String?` parameter. Required for any GET of a protected page to obtain a CSRF token before POSTing. All existing callers pass `null` (or omit the param) and continue to work.
+- `GroupId` is an inline class — `lateinit` is not allowed. Use `private var groupId: GroupId = GroupId(0)` with `@BeforeEach` assignment instead.
+- Route ordering in `AppFactory`: `groupHandler` contains `/group/create` and `/group/{id}` routes. http4k matches routes by specificity — `/group/create` (literal) wins over `/group/{id}` (path param). No ordering issue in practice.
+- `add_expense.hbs` renders per-member split inputs as repeated `split_user_id` + `split_amount` fields. The form always pre-renders all group members. The `parseFormBody` utility collects these as lists for the handler to zip into `ExpenseShare` objects.
+
 ## Notes from SLICE-V02
 
 - `buildApp` signature now requires all four repos explicitly (`userRepository`, `groupRepository`, `expenseRepository`, `settlementRepository`). All test files updated accordingly.
 - `GroupHandler` resolves member usernames and payer names from `UserRepository` before passing data to the template — the template receives plain `Map<String, Any?>` lists, keeping the view model simple.
 - `BalanceService` is a thin coordinator: it delegates to `BalanceCalculator.calculate(expenses, settlements)` — no business logic lives in the service layer.
 - `SettlementRepository` is minimal for now (`create` + `findByGroup`) — extended in SLICE-V06 when the settle form is added.
-- `SessionFilterTest` relies on `GET /group/create` returning 200 for an authenticated user. This placeholder is kept in `AppFactory` until SLICE-V03 replaces it with the real handler.
-
-## Review findings to address next
-
-None outstanding. All known hardening items (group visibility, logout cookie flags, CSRF) are done.
 
 ## Notes from CSRF hardening session
 
 - `CsrfToken.kt` — generates a URL-safe base64 nonce (32 random bytes via `SecureRandom`). Validates POST requests by constant-time comparison of the `_csrf` form field against the `csrf` cookie value. Form field extraction parses the raw URL-encoded body manually (no http4k lens re-read, which would consume the body).
 - `CsrfFilter.kt` — a top-level `Filter` wrapping the entire non-health route tree. Returns 403 immediately for any POST with missing or mismatched token. GET requests pass through unchanged.
-- GET handlers (`/register`, `/login`) now generate a nonce, set a `csrf` cookie (`HttpOnly=true`, `Secure=true`, `SameSite=Strict`, `Max-Age=3600`), and inject the nonce value into their ViewModel so templates can render `<input type="hidden" name="_csrf" value="{{csrfToken}}>`.
-- Failure re-render paths (validation errors, bad credentials) also generate a fresh nonce so the re-rendered form remains submittable.
-- `base.hbs` logout form also gets the `_csrf` hidden field; the nonce is injected by `MainHandler` and `GroupHandler` into their ViewModels (to be done when those handlers render `base.hbs` — currently `base.hbs` is used by group/index templates; those handlers need to pass `csrfToken` in their model).
-- **Important:** `base.hbs` `{{csrfToken}}` will render blank until `MainHandler` and `GroupHandler` pass it. The logout button will be broken in the browser until those handlers are updated in SLICE-V03. The CSRF filter protects the POST — a missing token returns 403. Fix in SLICE-V03: pass `csrfToken` from a fresh `CsrfToken.generate()` into every ViewModel that extends `base.hbs`.
-- ~~Fix applied immediately after CSRF commit~~: `IndexViewModel` and `GroupViewModel` now carry `csrfToken`; both handlers generate a nonce, set the `csrf` cookie, and inject the nonce. `index.hbs` logout form now includes `<input type="hidden" name="_csrf">`. Logout works end-to-end from both pages. Tests added to `MainHandlerTest` to cover this.
-- `TestHelpers.kt` added to the test package: `registerAndLogin`, `registerUser`, `loginUser`, `getCsrfToken` — shared across `AuthHandlerTest`, `GroupHandlerTest`, `MainHandlerTest`, `SessionFilterTest`. All new handler tests must use this helper for any POST flow.
+- `TestHelpers.kt` added to the test package: `registerAndLogin`, `registerUser`, `loginUser`, `getCsrfToken` — shared across all handler tests. All new handler tests must use this helper for any POST flow.
 - ADR-018 locked in `06-decisions.md`.
-
-## Notes from this session (auth/privacy hardening)
-
-- Added ADR-017: group visibility is membership-scoped. Group details are private to members, and the home page only shows groups the current user belongs to.
-- Aligned `02-behavior-spec.md` with the product/security decision: group detail is member-only, and home no longer exposes all groups/users.
-- `GroupRepository.findByMember(...)` added so `MainHandler` can render only the current user's groups.
-- `GroupHandler` now returns 403 for authenticated non-members.
-- `index.hbs` no longer renders a global Users section.
-- Logout clearing now preserves `Secure`, `HttpOnly`, and `SameSite=Strict` on the cleared cookie.
-- Logout button added as `POST /logout` form in `index.hbs` and `base.hbs` — a `<a href="/logout">` (GET) would not match the POST route.
-- `HandlebarsTemplates().CachingClasspath()` caches templates at startup — template changes require a server restart to take effect.
-- Session cookie `maxAge` set to 86400 (1 day). The token is stateless (HMAC-signed), so there is no server-side revocation. Cookie theft risk is low in practice due to `httpOnly`, `secure`, and `sameSite=Strict`. If revocation is needed in future (force-logout, password reset), a server-side session store (DB or in-memory map) would be required.
-- Render deploy polling added to CI: after triggering the hook, the workflow fetches the latest deploy ID via `GET /v1/services/{id}/deploys?limit=1` (response shape: `.[0].deploy.id`) then polls `GET /v1/services/{id}/deploys/{deployId}` (response shape: `.status`) every 10s. Confirmed against live API using local `RENDER_API_KEY`.
-- Render API key must be set as `RENDER_API_KEY` in the GitHub `production` environment secret. The workflow verifies auth before triggering the deploy hook.
-- GitHub Actions bumped to latest: `checkout@v6`, `login-action@v4`, `build-push-action@v7`, `setup-java@v5`, `setup-gradle@v5` — no Node.js deprecation warnings.
 
 ## Notes from SLICE-V01
 
@@ -161,3 +157,4 @@ None outstanding. All known hardening items (group visibility, logout cookie fla
 - Update this file (07-handoff.md) at the end of every session.
 - New architectural decisions go in `06-decisions.md` before they are implemented.
 - Commit when a slice is green. One commit per slice minimum.
+
