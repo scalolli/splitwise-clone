@@ -128,6 +128,7 @@ None outstanding. All known hardening items (group visibility, logout cookie fla
 - Failure re-render paths (validation errors, bad credentials) also generate a fresh nonce so the re-rendered form remains submittable.
 - `base.hbs` logout form also gets the `_csrf` hidden field; the nonce is injected by `MainHandler` and `GroupHandler` into their ViewModels (to be done when those handlers render `base.hbs` — currently `base.hbs` is used by group/index templates; those handlers need to pass `csrfToken` in their model).
 - **Important:** `base.hbs` `{{csrfToken}}` will render blank until `MainHandler` and `GroupHandler` pass it. The logout button will be broken in the browser until those handlers are updated in SLICE-V03. The CSRF filter protects the POST — a missing token returns 403. Fix in SLICE-V03: pass `csrfToken` from a fresh `CsrfToken.generate()` into every ViewModel that extends `base.hbs`.
+- ~~Fix applied immediately after CSRF commit~~: `IndexViewModel` and `GroupViewModel` now carry `csrfToken`; both handlers generate a nonce, set the `csrf` cookie, and inject the nonce. `index.hbs` logout form now includes `<input type="hidden" name="_csrf">`. Logout works end-to-end from both pages. Tests added to `MainHandlerTest` to cover this.
 - `TestHelpers.kt` added to the test package: `registerAndLogin`, `registerUser`, `loginUser`, `getCsrfToken` — shared across `AuthHandlerTest`, `GroupHandlerTest`, `MainHandlerTest`, `SessionFilterTest`. All new handler tests must use this helper for any POST flow.
 - ADR-018 locked in `06-decisions.md`.
 
