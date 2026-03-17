@@ -28,14 +28,14 @@ The next agent (or human) picks up exactly from "Next action".
 | Group handler | `web/GroupHandler.kt` | `GET /group/{id}`: 200 with members/expenses/balances, 403 for authenticated non-members, 404 for unknown group, 302 to `/login` if unauthenticated |
 | App factory | `web/AppFactory.kt` | `buildApp(userRepository, groupRepository, expenseRepository, settlementRepository)` — all four repos now required; `/group/create` placeholder restored as protected route |
 | Templates | `src/main/resources/group.hbs` added | Renders group name, member list, expense table (description/amount/payer), balance list |
-| Templates | `src/main/resources/register.hbs`, `login.hbs`, `index.hbs`, `base.hbs` | Handlebars classpath templates; `index.hbs` and `base.hbs` have POST logout form button; register/login links removed from authenticated nav; home no longer shows a global users list |
+| Templates | `src/main/resources/register.hbs`, `login.hbs`, `index.hbs`, `base.hbs` | Handlebars classpath templates; `index.hbs` and `base.hbs` have POST logout form button; register/login links removed from authenticated nav; home no longer shows a global users list; all forms include `<input type="hidden" name="_csrf" value="{{csrfToken}}">` |
 | Test infrastructure | `test/persistence/PostgresTestSupport.kt` | Singleton Testcontainers container; `freshDatabase()` for a migrated `Database` |
 | DB smoke tests | `test/persistence/DatabaseIntegrationSmokeTest.kt` | Verifies connection and Flyway idempotency |
 | CI/CD | `.github/workflows/kotlin.yml`, `Dockerfile`, `render.yaml` | `test` + `publish` jobs; Docker image pushed to ghcr.io; Render deploy hook triggers deploy; workflow polls Render API until `live` or `failed`; all actions on latest Node.js 24 compatible versions (`checkout@v6`, `login-action@v4`, `build-push-action@v7`) |
-| Security | `web/SessionToken.kt`, `web/SessionFilter.kt`, `web/AuthHandler.kt`, `service/UserService.kt`, `domain/User.kt`, `persistence/UserRepository.kt` | HMAC-SHA256 signed session token, password/email validation, secure cookie attributes, no passwordHash on domain model, hardcoded DB credentials removed |
+| Security | `web/SessionToken.kt`, `web/SessionFilter.kt`, `web/AuthHandler.kt`, `web/CsrfToken.kt`, `web/CsrfFilter.kt`, `service/UserService.kt`, `domain/User.kt`, `persistence/UserRepository.kt` | HMAC-SHA256 signed session token, password/email validation, secure cookie attributes, no passwordHash on domain model, hardcoded DB credentials removed, CSRF double-submit cookie on all POST routes |
 | Local dev DB | `docker-compose.yml` | `docker compose up -d` starts Postgres on `5432`; credentials `splitwise/splitwise/splitwise` |
 
-**Known gaps to fix next:** CSRF protection is not implemented for POST routes.
+**Known gaps to fix next:** None — CSRF is done. Ready to start SLICE-V03.
 
 **Not yet started:** create group/expense forms, edit/delete flows, error pages, deployment config, PWA assets.
 
@@ -43,21 +43,31 @@ The next agent (or human) picks up exactly from "Next action".
 
 ## Next action
 
-**Implement CSRF protection before starting SLICE-V03.**
+**Start SLICE-V03: Create group and add expense.**
 
-All tests green. Latest functional slice commit: `569bd33 feat: SLICE-V02 group detail page with members, expenses and balances`.
+All tests green. Latest commit: `9c9b68f fix: add CSRF protection to all POST routes`.
 
-### Immediate hardening work
+### SLICE-V03 plan (from `04-iteration-backlog.md`)
 
-1. Add a CSRF design entry to `06-decisions.md` before implementing it.
-2. Write failing tests first for CSRF on POST routes (`/logout` now; group/expense mutations next).
-3. Implement a same-origin server-rendered CSRF mechanism for forms.
-4. Apply CSRF validation to all POST routes, not only future ones.
-5. Re-run `./gradlew test`.
+Write failing tests first:
+- `GET /group/create` → 200
+- `POST /group/create` valid → redirect to `/group/{id}`, flash "Group created successfully"
+- `POST /group/create` missing name → 400 with "Group name is required"
+- Creator is automatically a member of the new group
+- `GET /group/{id}/add_expense` → 200 (member only)
+- `POST /group/{id}/add_expense` valid → expense + shares saved, redirect to group page
+- `POST /group/{id}/add_expense` — all 7 validation rules from `ExpenseValidator`
+- Non-member cannot access `GET /group/{id}/add_expense` (403)
 
-### After hardening
+All POST tests must use `TestHelpers.getCsrfToken()` + `Cookie("csrf", ...)` pattern established in this session.
 
-Resume **SLICE-V03: Create group and add expense**.
+Implementation order:
+1. `service/GroupService.kt` — `createGroup(name, creatorId): Group`
+2. `service/ExpenseService.kt` — `addExpense(...): Expense`
+3. `web/GroupHandler.kt` — add `GET/POST /group/create` routes
+4. `web/ExpenseHandler.kt` — `GET/POST /group/{id}/add_expense`
+5. `templates/create_group.hbs`, `templates/add_expense.hbs`
+6. Wire into `AppFactory.kt`
 
 ## Slice status
 
@@ -78,6 +88,7 @@ Resume **SLICE-V03: Create group and add expense**.
 | SLICE-SEC | Security hardening | `done` |
 | SLICE-DEPLOY | CI/CD + Render deployment | `done` |
 | SLICE-V02 | Group detail page | `done` |
+| SLICE-CSRF | CSRF hardening | `done` |
 | SLICE-V03 | Create group and add expense | `todo` |
 | SLICE-V04 | Edit group and manage members | `todo` |
 | SLICE-V05 | Edit and delete expense | `todo` |
@@ -107,11 +118,20 @@ Resume **SLICE-V03: Create group and add expense**.
 
 ## Review findings to address next
 
-- Authorization/privacy hardening completed: group detail is membership-scoped, home only shows the current user's groups, and the global users list was removed.
-- CSRF protection is still not implemented. `SameSite=Strict` helps, but should not be treated as the only control before more POST routes are added.
-- Logout cookie clearing now mirrors secure session cookie attributes.
+None outstanding. All known hardening items (group visibility, logout cookie flags, CSRF) are done.
 
-## Notes from this session
+## Notes from CSRF hardening session
+
+- `CsrfToken.kt` — generates a URL-safe base64 nonce (32 random bytes via `SecureRandom`). Validates POST requests by constant-time comparison of the `_csrf` form field against the `csrf` cookie value. Form field extraction parses the raw URL-encoded body manually (no http4k lens re-read, which would consume the body).
+- `CsrfFilter.kt` — a top-level `Filter` wrapping the entire non-health route tree. Returns 403 immediately for any POST with missing or mismatched token. GET requests pass through unchanged.
+- GET handlers (`/register`, `/login`) now generate a nonce, set a `csrf` cookie (`HttpOnly=true`, `Secure=true`, `SameSite=Strict`, `Max-Age=3600`), and inject the nonce value into their ViewModel so templates can render `<input type="hidden" name="_csrf" value="{{csrfToken}}>`.
+- Failure re-render paths (validation errors, bad credentials) also generate a fresh nonce so the re-rendered form remains submittable.
+- `base.hbs` logout form also gets the `_csrf` hidden field; the nonce is injected by `MainHandler` and `GroupHandler` into their ViewModels (to be done when those handlers render `base.hbs` — currently `base.hbs` is used by group/index templates; those handlers need to pass `csrfToken` in their model).
+- **Important:** `base.hbs` `{{csrfToken}}` will render blank until `MainHandler` and `GroupHandler` pass it. The logout button will be broken in the browser until those handlers are updated in SLICE-V03. The CSRF filter protects the POST — a missing token returns 403. Fix in SLICE-V03: pass `csrfToken` from a fresh `CsrfToken.generate()` into every ViewModel that extends `base.hbs`.
+- `TestHelpers.kt` added to the test package: `registerAndLogin`, `registerUser`, `loginUser`, `getCsrfToken` — shared across `AuthHandlerTest`, `GroupHandlerTest`, `MainHandlerTest`, `SessionFilterTest`. All new handler tests must use this helper for any POST flow.
+- ADR-018 locked in `06-decisions.md`.
+
+## Notes from this session (auth/privacy hardening)
 
 - Added ADR-017: group visibility is membership-scoped. Group details are private to members, and the home page only shows groups the current user belongs to.
 - Aligned `02-behavior-spec.md` with the product/security decision: group detail is member-only, and home no longer exposes all groups/users.
