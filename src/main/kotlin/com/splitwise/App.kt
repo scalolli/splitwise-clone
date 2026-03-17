@@ -11,8 +11,9 @@ import org.http4k.server.asServer
 fun main() {
     val port = System.getenv("PORT")?.toIntOrNull() ?: 8080
 
+    val rawJdbcUrl = System.getenv("JDBC_URL") ?: error("JDBC_URL environment variable must be set")
     val config = DatabaseConfig(
-        jdbcUrl   = System.getenv("JDBC_URL")    ?: error("JDBC_URL environment variable must be set"),
+        jdbcUrl   = if (rawJdbcUrl.startsWith("jdbc:")) rawJdbcUrl else "jdbc:$rawJdbcUrl",
         username  = System.getenv("DB_USERNAME") ?: error("DB_USERNAME environment variable must be set"),
         password  = System.getenv("DB_PASSWORD") ?: error("DB_PASSWORD environment variable must be set"),
     )

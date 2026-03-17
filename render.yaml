@@ -3,5 +3,24 @@ services:
     name: splitwise-clone
     env: java
     plan: free
-    buildCommand: "./gradlew build"
-    startCommand: "./gradlew run"
+    buildCommand: "./gradlew distZip"
+    startCommand: "unzip -o build/distributions/splitwise-kotlin-app.zip && splitwise-kotlin-app/bin/splitwise-kotlin-app"
+    envVars:
+      - key: JDBC_URL
+        fromDatabase:
+          name: splitwise-db
+          property: connectionString
+      - key: DB_USERNAME
+        fromDatabase:
+          name: splitwise-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: splitwise-db
+          property: password
+      - key: SESSION_SECRET
+        generateValue: true
+
+databases:
+  - name: splitwise-db
+    plan: free
