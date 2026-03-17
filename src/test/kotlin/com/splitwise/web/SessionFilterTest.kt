@@ -3,6 +3,8 @@ package com.splitwise.web
 import com.splitwise.persistence.PostgresTestSupport
 import com.splitwise.persistence.UserRepository
 import com.splitwise.persistence.GroupRepository
+import com.splitwise.persistence.ExpenseRepository
+import com.splitwise.persistence.SettlementRepository
 import org.http4k.core.Method.GET
 import org.http4k.core.Method.POST
 import org.http4k.core.Request
@@ -17,7 +19,9 @@ class SessionFilterTest {
     private val database = PostgresTestSupport.freshDatabase()
     private val userRepository = UserRepository(database)
     private val groupRepository = GroupRepository(database)
-    private val app = buildApp(userRepository, groupRepository)
+    private val expenseRepository = ExpenseRepository(database)
+    private val settlementRepository = SettlementRepository(database)
+    private val app = buildApp(userRepository, groupRepository, expenseRepository, settlementRepository)
 
     private fun formRequest(method: org.http4k.core.Method, path: String, vararg pairs: Pair<String, String>) =
         Request(method, path)

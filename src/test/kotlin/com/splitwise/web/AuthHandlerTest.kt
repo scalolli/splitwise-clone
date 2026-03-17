@@ -3,6 +3,8 @@ package com.splitwise.web
 import com.splitwise.persistence.PostgresTestSupport
 import com.splitwise.persistence.UserRepository
 import com.splitwise.persistence.GroupRepository
+import com.splitwise.persistence.ExpenseRepository
+import com.splitwise.persistence.SettlementRepository
 import com.splitwise.service.UserService
 import org.http4k.core.Method.GET
 import org.http4k.core.Method.POST
@@ -20,7 +22,9 @@ class AuthHandlerTest {
     private val database = PostgresTestSupport.freshDatabase()
     private val userRepository = UserRepository(database)
     private val groupRepository = GroupRepository(database)
-    private val app = buildApp(userRepository, groupRepository)
+    private val expenseRepository = ExpenseRepository(database)
+    private val settlementRepository = SettlementRepository(database)
+    private val app = buildApp(userRepository, groupRepository, expenseRepository, settlementRepository)
 
     private fun formBody(vararg pairs: Pair<String, String>): String =
         pairs.joinToString("&") { (k, v) ->

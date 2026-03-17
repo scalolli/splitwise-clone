@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{groupName}} — Splitwise</title>
+</head>
+<body>
+    <nav>
+        <a href="/">Home</a> |
+        <form method="post" action="/logout" style="display:inline">
+            <button type="submit">Logout</button>
+        </form>
+    </nav>
+
+    <h1>{{groupName}}</h1>
+
+    <h2>Members</h2>
+    {{#if members}}
+    <ul>
+        {{#each members}}
+        <li>{{username}}</li>
+        {{/each}}
+    </ul>
+    {{else}}
+    <p>No members.</p>
+    {{/if}}
+
+    <h2>Expenses</h2>
+    {{#if expenses}}
+    <table>
+        <thead>
+            <tr><th>Description</th><th>Amount</th><th>Paid by</th></tr>
+        </thead>
+        <tbody>
+            {{#each expenses}}
+            <tr>
+                <td>{{description}}</td>
+                <td>{{amount}}</td>
+                <td>{{payer}}</td>
+            </tr>
+            {{/each}}
+        </tbody>
+    </table>
+    {{else}}
+    <p>No expenses yet.</p>
+    {{/if}}
+
+    <h2>Balances</h2>
+    {{#if balances}}
+    <ul>
+        {{#each balances}}
+        <li>{{debtor}} owes {{creditor}} {{amount}}</li>
+        {{/each}}
+    </ul>
+    {{else}}
+    <p>All settled up!</p>
+    {{/if}}
+</body>
+</html>

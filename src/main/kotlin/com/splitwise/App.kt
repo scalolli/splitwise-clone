@@ -2,7 +2,9 @@ package com.splitwise
 
 import com.splitwise.persistence.Database
 import com.splitwise.persistence.DatabaseConfig
+import com.splitwise.persistence.ExpenseRepository
 import com.splitwise.persistence.GroupRepository
+import com.splitwise.persistence.SettlementRepository
 import com.splitwise.persistence.UserRepository
 import com.splitwise.web.buildApp
 import org.http4k.server.Jetty
@@ -26,7 +28,9 @@ fun main() {
 
     val userRepository = UserRepository(database)
     val groupRepository = GroupRepository(database)
+    val expenseRepository = ExpenseRepository(database)
+    val settlementRepository = SettlementRepository(database)
 
-    val app = buildApp(userRepository, groupRepository, sessionSecret)
+    val app = buildApp(userRepository, groupRepository, expenseRepository, settlementRepository, sessionSecret)
     app.asServer(Jetty(port)).start().block()
 }

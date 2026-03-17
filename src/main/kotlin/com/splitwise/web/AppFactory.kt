@@ -1,6 +1,8 @@
 package com.splitwise.web
 
+import com.splitwise.persistence.ExpenseRepository
 import com.splitwise.persistence.GroupRepository
+import com.splitwise.persistence.SettlementRepository
 import com.splitwise.persistence.UserRepository
 import com.splitwise.service.UserService
 import org.http4k.core.HttpHandler
@@ -14,6 +16,8 @@ import org.http4k.routing.routes
 fun buildApp(
     userRepository: UserRepository,
     groupRepository: GroupRepository,
+    expenseRepository: ExpenseRepository,
+    settlementRepository: SettlementRepository,
     sessionSecret: String = "dev-secret-change-in-production!!",
 ): HttpHandler {
     val userService = UserService(userRepository)
@@ -22,8 +26,13 @@ fun buildApp(
 
     return routes(
         "/health" bind GET to healthHandler,
-        "/group/create" bind GET to sessionFilter.then { Response(Status.OK).body("Create Group") },
         authHandler(userService, sessionToken),
-        sessionFilter.then(mainHandler(userRepository, groupRepository)),
+        sessionFilter.then(
+            routes(
+                "/group/create" bind GET to { Response(Status.OK).body("Create Group") },
+                mainHandler(userRepository, groupRepository),
+                groupHandler(groupRepository, userRepository, expenseRepository, settlementRepository),
+            )
+        ),
     )
 }
