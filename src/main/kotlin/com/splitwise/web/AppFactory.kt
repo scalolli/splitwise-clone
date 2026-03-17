@@ -30,8 +30,8 @@ fun buildApp(
         sessionFilter.then(
             routes(
                 "/group/create" bind GET to { Response(Status.OK).body("Create Group") },
-                mainHandler(userRepository, groupRepository),
-                groupHandler(groupRepository, userRepository, expenseRepository, settlementRepository),
+                mainHandler(groupRepository, sessionToken),
+                groupHandler(groupRepository, userRepository, expenseRepository, settlementRepository, sessionToken),
             )
         ),
     )

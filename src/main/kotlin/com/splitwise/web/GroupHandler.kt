@@ -35,6 +35,7 @@ fun groupHandler(
     userRepository: UserRepository,
     expenseRepository: ExpenseRepository,
     settlementRepository: SettlementRepository,
+    sessionToken: SessionToken,
 ): RoutingHttpHandler {
     val renderer = HandlebarsTemplates().CachingClasspath()
     val htmlLens = Body.viewModel(renderer, ContentType.TEXT_HTML).toLens()
@@ -42,11 +43,17 @@ fun groupHandler(
 
     return routes(
         "/group/{id}" bind GET to { request ->
+            val currentUserId = request.sessionUserId(sessionToken)
+                ?: return@to Response(Status.FOUND).header("Location", "/login")
             val idParam = request.path("id")?.toLongOrNull()
                 ?: return@to Response(Status.NOT_FOUND)
 
             val group = groupRepository.findById(GroupId(idParam))
                 ?: return@to Response(Status.NOT_FOUND)
+
+            if (group.memberIds.none { it == currentUserId }) {
+                return@to Response(Status.FORBIDDEN)
+            }
 
             val userMap = group.memberIds
                 .mapNotNull { userId -> userRepository.findById(userId)?.let { userId to it } }

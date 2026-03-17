@@ -46,8 +46,9 @@ correct behavior is documented here instead.
 ## Home page
 
 - `GET /` — accessible without login
-- Displays a list of all groups
-- Displays a list of all registered users (usernames)
+- If unauthenticated: redirects to `/login`
+- If authenticated: displays only the groups the current user belongs to
+- Does not display a global list of all registered users
 
 ---
 
@@ -65,11 +66,13 @@ correct behavior is documented here instead.
 
 ### View group
 - `GET /group/{id}` — protected
+- User must be a member of the group
 - Shows group name, description, member list
 - Shows all expenses (description, amount, payer, date)
 - Shows calculated balances (who owes whom, net amounts)
   - Balances subtract any recorded settlements for this group
 - 404 if group does not exist
+- 403 if group exists but the current user is not a member
 
 ### Create group
 - `GET /group/create` — protected, renders form
@@ -186,7 +189,7 @@ correct behavior is documented here instead.
 | Action | Who can perform it |
 |---|---|
 | View any page | Any authenticated user (except public pages) |
-| View group detail | Any authenticated user (not restricted to members) |
+| View group detail | Group members only |
 | Add expense | Group members only |
 | Edit expense | Expense payer OR group creator |
 | Delete expense | Expense payer OR group creator |

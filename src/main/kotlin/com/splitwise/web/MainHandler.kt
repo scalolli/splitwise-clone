@@ -1,7 +1,7 @@
 package com.splitwise.web
 
+import com.splitwise.domain.UserId
 import com.splitwise.persistence.GroupRepository
-import com.splitwise.persistence.UserRepository
 import org.http4k.core.Body
 import org.http4k.core.ContentType
 import org.http4k.core.Method.GET
@@ -17,24 +17,23 @@ import org.http4k.template.viewModel
 
 data class IndexViewModel(
     val groups: List<Map<String, Any?>>,
-    val users: List<Map<String, Any?>>,
 ) : ViewModel {
     override fun template() = "index"
 }
 
-fun mainHandler(userRepository: UserRepository, groupRepository: GroupRepository): RoutingHttpHandler {
+fun mainHandler(groupRepository: GroupRepository, sessionToken: SessionToken): RoutingHttpHandler {
     val renderer = HandlebarsTemplates().CachingClasspath()
     val htmlLens = Body.viewModel(renderer, ContentType.TEXT_HTML).toLens()
 
     return routes(
-        "/" bind GET to {
-            val groups = groupRepository.findAll().map { g ->
+        "/" bind GET to { request ->
+            val currentUserId = request.sessionUserId(sessionToken)
+                ?: return@to Response(Status.FOUND).header("Location", "/login")
+
+            val groups = groupRepository.findByMember(UserId(currentUserId.value)).map { g ->
                 mapOf("id" to g.id.value, "name" to g.name)
             }
-            val users = userRepository.findAll().map { u ->
-                mapOf("id" to u.id.value, "username" to u.username)
-            }
-            Response(Status.OK).with(htmlLens of IndexViewModel(groups = groups, users = users))
+            Response(Status.OK).with(htmlLens of IndexViewModel(groups = groups))
         },
     )
 }

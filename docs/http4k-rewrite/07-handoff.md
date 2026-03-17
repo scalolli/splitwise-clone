@@ -17,23 +17,25 @@ The next agent (or human) picks up exactly from "Next action".
 | Database layer | `persistence/Database.kt`, `persistence/Tables.kt` | Wraps Exposed DSL + Flyway; provides `connect()`, `migrate()`, `transaction {}` |
 | Schema | `src/main/resources/db/migration/V1__initial_schema.sql` | 6 tables: `users`, `groups`, `group_members`, `expenses`, `expense_shares`, `settlements` |
 | User repository | `persistence/UserRepository.kt` | `save`, `findAll`, `findById`, `findByUsername`, `findByEmail`; all tests pass |
-| Group repository | `persistence/GroupRepository.kt` | `create`, `findById`, `findAll`, `addMember`, `removeMember`; all tests pass |
+| Group repository | `persistence/GroupRepository.kt` | `create`, `findById`, `findAll`, `findByMember`, `addMember`, `removeMember`; all tests pass |
 | Expense repository | `persistence/ExpenseRepository.kt` | `create`, `findById`, `findByGroup`, `update`, `delete`; all tests pass |
 | User service | `service/UserService.kt` | `register` (BCrypt hash, validation) + `authenticate`; used by AuthHandler |
 | Session filter | `web/SessionFilter.kt` | Reads `session` cookie (value = userId Long); redirects to `/login` if absent |
-| Auth handler | `web/AuthHandler.kt` | `GET/POST /register`, `GET/POST /login`, `POST /logout`; flash cookie for messages; session `maxAge=86400` (1 day); logout redirects to `/login` |
-| Main handler | `web/MainHandler.kt` | `GET /`; lists all groups and users via Handlebars template |
+| Auth handler | `web/AuthHandler.kt` | `GET/POST /register`, `GET/POST /login`, `POST /logout`; flash cookie for messages; session `maxAge=86400` (1 day); logout redirects to `/login`; cleared cookie now mirrors secure attributes |
+| Main handler | `web/MainHandler.kt` | `GET /`; only shows groups the current user belongs to |
 | Settlement repository | `persistence/SettlementRepository.kt` | `create`, `findByGroup`; used by BalanceService |
 | Balance service | `service/BalanceService.kt` | wires `BalanceCalculator` + `ExpenseRepository` + `SettlementRepository` |
-| Group handler | `web/GroupHandler.kt` | `GET /group/{id}`: 200 with members/expenses/balances, 404 for unknown group, 302 to `/login` if unauthenticated |
+| Group handler | `web/GroupHandler.kt` | `GET /group/{id}`: 200 with members/expenses/balances, 403 for authenticated non-members, 404 for unknown group, 302 to `/login` if unauthenticated |
 | App factory | `web/AppFactory.kt` | `buildApp(userRepository, groupRepository, expenseRepository, settlementRepository)` — all four repos now required; `/group/create` placeholder restored as protected route |
 | Templates | `src/main/resources/group.hbs` added | Renders group name, member list, expense table (description/amount/payer), balance list |
-| Templates | `src/main/resources/register.hbs`, `login.hbs`, `index.hbs`, `base.hbs` | Handlebars classpath templates; `index.hbs` and `base.hbs` have POST logout form button; register/login links removed from authenticated nav |
+| Templates | `src/main/resources/register.hbs`, `login.hbs`, `index.hbs`, `base.hbs` | Handlebars classpath templates; `index.hbs` and `base.hbs` have POST logout form button; register/login links removed from authenticated nav; home no longer shows a global users list |
 | Test infrastructure | `test/persistence/PostgresTestSupport.kt` | Singleton Testcontainers container; `freshDatabase()` for a migrated `Database` |
 | DB smoke tests | `test/persistence/DatabaseIntegrationSmokeTest.kt` | Verifies connection and Flyway idempotency |
 | CI/CD | `.github/workflows/kotlin.yml`, `Dockerfile`, `render.yaml` | `test` + `publish` jobs; Docker image pushed to ghcr.io; Render deploy hook triggers deploy; workflow polls Render API until `live` or `failed`; all actions on latest Node.js 24 compatible versions (`checkout@v6`, `login-action@v4`, `build-push-action@v7`) |
 | Security | `web/SessionToken.kt`, `web/SessionFilter.kt`, `web/AuthHandler.kt`, `service/UserService.kt`, `domain/User.kt`, `persistence/UserRepository.kt` | HMAC-SHA256 signed session token, password/email validation, secure cookie attributes, no passwordHash on domain model, hardcoded DB credentials removed |
 | Local dev DB | `docker-compose.yml` | `docker compose up -d` starts Postgres on `5432`; credentials `splitwise/splitwise/splitwise` |
+
+**Known gaps to fix next:** CSRF protection is not implemented for POST routes.
 
 **Not yet started:** create group/expense forms, edit/delete flows, error pages, deployment config, PWA assets.
 
@@ -41,20 +43,21 @@ The next agent (or human) picks up exactly from "Next action".
 
 ## Next action
 
-**Start SLICE-V03: Create group and add expense.**
+**Implement CSRF protection before starting SLICE-V03.**
 
-All tests green. Commit: `569bd33 feat: SLICE-V02 group detail page with members, expenses and balances`.
+All tests green. Latest functional slice commit: `569bd33 feat: SLICE-V02 group detail page with members, expenses and balances`.
 
-### SLICE-V03: Create group and add expense
+### Immediate hardening work
 
-1. Read SLICE-V03 in `04-iteration-backlog.md`.
-2. Write failing tests first (see spec for the full list including all 7 expense validation rules).
-3. Implement `GroupService.createGroup(...)`.
-4. Implement `ExpenseService.addExpense(...)`.
-5. Implement `POST /group/create` in `GroupHandler.kt` and `POST /group/{id}/add_expense` in a new `ExpenseHandler.kt`.
-6. Add `create_group.hbs` and `add_expense.hbs` templates.
-7. Run `./gradlew test` — all tests green.
-8. Commit: `feat: create group and add expense`.
+1. Add a CSRF design entry to `06-decisions.md` before implementing it.
+2. Write failing tests first for CSRF on POST routes (`/logout` now; group/expense mutations next).
+3. Implement a same-origin server-rendered CSRF mechanism for forms.
+4. Apply CSRF validation to all POST routes, not only future ones.
+5. Re-run `./gradlew test`.
+
+### After hardening
+
+Resume **SLICE-V03: Create group and add expense**.
 
 ## Slice status
 
@@ -102,8 +105,20 @@ All tests green. Commit: `569bd33 feat: SLICE-V02 group detail page with members
 - `SettlementRepository` is minimal for now (`create` + `findByGroup`) — extended in SLICE-V06 when the settle form is added.
 - `SessionFilterTest` relies on `GET /group/create` returning 200 for an authenticated user. This placeholder is kept in `AppFactory` until SLICE-V03 replaces it with the real handler.
 
+## Review findings to address next
+
+- Authorization/privacy hardening completed: group detail is membership-scoped, home only shows the current user's groups, and the global users list was removed.
+- CSRF protection is still not implemented. `SameSite=Strict` helps, but should not be treated as the only control before more POST routes are added.
+- Logout cookie clearing now mirrors secure session cookie attributes.
+
 ## Notes from this session
 
+- Added ADR-017: group visibility is membership-scoped. Group details are private to members, and the home page only shows groups the current user belongs to.
+- Aligned `02-behavior-spec.md` with the product/security decision: group detail is member-only, and home no longer exposes all groups/users.
+- `GroupRepository.findByMember(...)` added so `MainHandler` can render only the current user's groups.
+- `GroupHandler` now returns 403 for authenticated non-members.
+- `index.hbs` no longer renders a global Users section.
+- Logout clearing now preserves `Secure`, `HttpOnly`, and `SameSite=Strict` on the cleared cookie.
 - Logout button added as `POST /logout` form in `index.hbs` and `base.hbs` — a `<a href="/logout">` (GET) would not match the POST route.
 - `HandlebarsTemplates().CachingClasspath()` caches templates at startup — template changes require a server restart to take effect.
 - Session cookie `maxAge` set to 86400 (1 day). The token is stateless (HMAC-signed), so there is no server-side revocation. Cookie theft risk is low in practice due to `httpOnly`, `secure`, and `sameSite=Strict`. If revocation is needed in future (force-logout, password reset), a server-side session store (DB or in-memory map) would be required.
@@ -116,7 +131,7 @@ All tests green. Commit: `569bd33 feat: SLICE-V02 group detail page with members
 - `Response.cookie(name)` does not exist in http4k 5.x — use `response.cookies().find { it.name == "..." }` for Response. The `cookie(name)` getter exists only for `Request`.
 - `routes()` only accepts `vararg RoutingHttpHandler` — handler factory functions must declare return type as `RoutingHttpHandler`, not `HttpHandler`.
 - `Filter.then(RoutingHttpHandler)` returns `RoutingHttpHandler`; `Filter.then(HttpHandler)` returns plain `Function1<Request, Response>`. Use the `RoutingHttpHandler` form when the result must be passed to `routes()`.
-- Session cookie value is the user's `id` (a Long) serialized as a String — simple, no signing. Acceptable for development; revisit before production in SLICE-V08.
+- Session cookie is HMAC-SHA256 signed via `SessionToken.kt`; it is not a raw unsigned user id.
 - `HandlebarsTemplates().CachingClasspath()` loads `.hbs` files from the classpath root using `/{templateName}.hbs`.
 
 ---

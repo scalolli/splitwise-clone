@@ -66,4 +66,35 @@ class MainHandlerTest {
         assertTrue(response.bodyString().contains("Test Group Alpha"),
             "Expected group name in home page body")
     }
+
+    @Test
+    fun `GET home shows only groups the current user belongs to`() {
+        val aliceSession = loginSession("alice_home", "alice_home@example.com")
+        loginSession("bob_home", "bob_home@example.com")
+        val alice = userRepository.findByUsername("alice_home")!!
+        val bob = userRepository.findByUsername("bob_home")!!
+
+        groupRepository.create("Alice Group", null, alice.id)
+        groupRepository.create("Bob Private Group", null, bob.id)
+
+        val response = app(Request(GET, "/").cookie("session", aliceSession))
+
+        assertEquals(200, response.status.code)
+        val body = response.bodyString()
+        assertTrue(body.contains("Alice Group"), "Expected Alice's group in home page body")
+        assertTrue(!body.contains("Bob Private Group"), "Did not expect Bob's group in Alice's home page body")
+    }
+
+    @Test
+    fun `GET home does not list all registered users`() {
+        val session = loginSession("viewer_home", "viewer_home@example.com")
+        loginSession("hidden_user", "hidden_user@example.com")
+
+        val response = app(Request(GET, "/").cookie("session", session))
+
+        assertEquals(200, response.status.code)
+        val body = response.bodyString()
+        assertTrue(!body.contains("hidden_user"), "Did not expect global user list on home page")
+        assertTrue(!body.contains("<h2>Users</h2>"), "Did not expect Users section on home page")
+    }
 }

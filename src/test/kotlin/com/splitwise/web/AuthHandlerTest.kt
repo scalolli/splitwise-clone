@@ -191,11 +191,15 @@ class AuthHandlerTest {
         val response = app(Request(POST, "/logout").cookie("session", sessionCookie.value))
         assertEquals(302, response.status.code)
         assertEquals("/login", response.header("Location"))
-        // session cookie should be cleared (max-age=0 or empty value)
+        val clearedCookie = response.cookies().find { it.name == "session" }
+        assertNotNull(clearedCookie, "Expected cleared session cookie to be present")
         val setCookie = response.header("Set-Cookie") ?: ""
         assertTrue(
             setCookie.contains("session=;") || setCookie.contains("Max-Age=0") || setCookie.contains("session=\"\""),
             "Expected session to be cleared but Set-Cookie was: $setCookie"
         )
+        assertTrue(clearedCookie.secure == true, "Expected cleared session cookie to retain Secure flag")
+        assertTrue(clearedCookie.httpOnly == true, "Expected cleared session cookie to retain HttpOnly flag")
+        assertTrue(clearedCookie.sameSite?.name == "Strict", "Expected cleared session cookie to retain SameSite=Strict")
     }
 }

@@ -134,6 +134,9 @@ fun authHandler(userService: UserService, sessionToken: SessionToken): RoutingHt
                 value = "",
                 maxAge = 0,
                 path = "/",
+                httpOnly = true,
+                secure = true,
+                sameSite = SameSite.Strict,
             )
             Response(Status.FOUND)
                 .header("Location", "/login")

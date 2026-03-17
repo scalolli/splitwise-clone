@@ -9,7 +9,9 @@ import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.insertIgnore
+import org.jetbrains.exposed.sql.innerJoin
 import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.transactions.transaction
 
 class GroupRepository(private val database: Database) {
@@ -64,6 +66,40 @@ class GroupRepository(private val database: Database) {
             val allMembers = GroupMembersTable.selectAll().toList()
 
             allRows.map { row ->
+                val gid = row[GroupsTable.id]
+                val memberIds = allMembers
+                    .filter { it[GroupMembersTable.groupId] == gid }
+                    .map { UserId(it[GroupMembersTable.userId]) }
+
+                Group(
+                    id = GroupId(gid),
+                    name = row[GroupsTable.name],
+                    description = row[GroupsTable.description],
+                    creatorId = UserId(row[GroupsTable.creatorId]),
+                    memberIds = memberIds,
+                    createdAt = row[GroupsTable.createdAt].toInstant(),
+                )
+            }
+        }
+
+    fun findByMember(userId: UserId): List<Group> =
+        transaction(database.exposed) {
+            val rows = GroupsTable
+                .innerJoin(GroupMembersTable)
+                .selectAll()
+                .where(GroupMembersTable.userId eq userId.value)
+                .toList()
+
+            val groupIds = rows.map { it[GroupsTable.id] }
+            val allMembers = if (groupIds.isEmpty()) {
+                emptyList()
+            } else {
+                GroupMembersTable.selectAll()
+                    .where(GroupMembersTable.groupId inList groupIds)
+                    .toList()
+            }
+
+            rows.map { row ->
                 val gid = row[GroupsTable.id]
                 val memberIds = allMembers
                     .filter { it[GroupMembersTable.groupId] == gid }

@@ -290,3 +290,22 @@ database. It is not used by the test suite.
   per-test UUID databases on a shared container.
 - Truncating tables between tests: fragile; requires enumerating tables; breaks if a new
   table is added without updating the truncation list.
+
+---
+
+## ADR-017 — Group visibility is membership-scoped
+
+**Status:** Locked
+
+**Decision:** A signed-in user may only see groups they belong to on the home page, and
+may only view a group detail page if they are a member of that group. Non-members do not
+have read access to group details.
+
+**Rationale:** Group pages contain member names, expenses, and balances, which are private
+financial records. Exposing them to arbitrary authenticated users is an authorization bug,
+not a product feature. The home page should likewise avoid revealing unrelated groups.
+
+**Rejected alternatives:**
+- Any authenticated user can view any group: rejected due to privacy and authorization risk.
+- Home page shows all groups for discovery: rejected because group existence is itself
+  sensitive data in this product.

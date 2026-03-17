@@ -75,6 +75,21 @@ class GroupHandlerTest {
     }
 
     @Test
+    fun `GET group returns 403 for authenticated non-member`() {
+        val ownerSession = registerAndLogin("owner", "owner@example.com")
+        val strangerSession = registerAndLogin("stranger", "stranger@example.com")
+        val owner = userRepository.findByUsername("owner")!!
+        val group = groupRepository.create("Private Group", null, owner.id)
+
+        val ownerResponse = app(Request(GET, "/group/${group.id.value}").cookie("session", ownerSession))
+        assertEquals(200, ownerResponse.status.code)
+
+        val strangerResponse = app(Request(GET, "/group/${group.id.value}").cookie("session", strangerSession))
+
+        assertEquals(403, strangerResponse.status.code)
+    }
+
+    @Test
     fun `GET group returns 200 with members listed`() {
         val session = registerAndLogin("bob", "bob@example.com")
         val bob = userRepository.findByUsername("bob")!!
