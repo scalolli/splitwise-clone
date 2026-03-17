@@ -27,7 +27,7 @@ The next agent (or human) picks up exactly from "Next action".
 | Templates | `src/main/resources/register.hbs`, `login.hbs`, `index.hbs`, `base.hbs` | Handlebars classpath templates; `index.hbs` and `base.hbs` have POST logout form button; register/login links removed from authenticated nav |
 | Test infrastructure | `test/persistence/PostgresTestSupport.kt` | Singleton Testcontainers container; `freshDatabase()` for a migrated `Database` |
 | DB smoke tests | `test/persistence/DatabaseIntegrationSmokeTest.kt` | Verifies connection and Flyway idempotency |
-| CI/CD | `.github/workflows/kotlin.yml`, `Dockerfile`, `render.yaml` | `test` + `publish` jobs; Docker image pushed to ghcr.io; Render deploy hook wired; `production` environment secret configured; docker actions bumped to Node.js 24 compatible versions (`login-action@v4`, `build-push-action@v7`) |
+| CI/CD | `.github/workflows/kotlin.yml`, `Dockerfile`, `render.yaml` | `test` + `publish` jobs; Docker image pushed to ghcr.io; Render deploy hook triggers deploy; workflow polls Render API until `live` or `failed`; all actions on latest Node.js 24 compatible versions (`checkout@v6`, `login-action@v4`, `build-push-action@v7`) |
 | Security | `web/SessionToken.kt`, `web/SessionFilter.kt`, `web/AuthHandler.kt`, `service/UserService.kt`, `domain/User.kt`, `persistence/UserRepository.kt` | HMAC-SHA256 signed session token, password/email validation, secure cookie attributes, no passwordHash on domain model, hardcoded DB credentials removed |
 | Local dev DB | `docker-compose.yml` | `docker compose up -d` starts Postgres on `5432`; credentials `splitwise/splitwise/splitwise` |
 
@@ -93,7 +93,9 @@ CI/CD pipeline is verified and working end-to-end. Deployment to Render is confi
 - Logout button added as `POST /logout` form in `index.hbs` and `base.hbs` — a `<a href="/logout">` (GET) would not match the POST route.
 - `HandlebarsTemplates().CachingClasspath()` caches templates at startup — template changes require a server restart to take effect.
 - Session cookie `maxAge` set to 86400 (1 day). The token is stateless (HMAC-signed), so there is no server-side revocation. Cookie theft risk is low in practice due to `httpOnly`, `secure`, and `sameSite=Strict`. If revocation is needed in future (force-logout, password reset), a server-side session store (DB or in-memory map) would be required.
-- GitHub Actions docker actions bumped: `checkout@v4`, `login-action@v4`, `build-push-action@v7` — Node.js 24 compatible, avoids deprecation warnings from June 2026.
+- Render deploy polling added to CI: after triggering the hook, the workflow fetches the latest deploy ID via `GET /v1/services/{id}/deploys?limit=1` (response shape: `.[0].deploy.id`) then polls `GET /v1/services/{id}/deploys/{deployId}` (response shape: `.status`) every 10s. Confirmed against live API using local `RENDER_API_KEY`.
+- Render API key must be set as `RENDER_API_KEY` in the GitHub `production` environment secret. The workflow verifies auth before triggering the deploy hook.
+- GitHub Actions bumped to latest: `checkout@v6`, `login-action@v4`, `build-push-action@v7`, `setup-java@v5`, `setup-gradle@v5` — no Node.js deprecation warnings.
 
 ## Notes from SLICE-V01
 
