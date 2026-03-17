@@ -55,18 +55,19 @@ jobs:
           tags: ghcr.io/${{ github.repository }}:latest
 
       - name: Trigger Render deploy
-        id: trigger
-        run: |
-          RESPONSE=$(curl --fail --silent -X GET "${{ secrets.RENDER_DEPLOY_HOOK }}")
-          DEPLOY_ID=$(echo "$RESPONSE" | jq -r '.id')
-          echo "deploy_id=$DEPLOY_ID" >> $GITHUB_OUTPUT
+        run: curl --fail --silent "${{ secrets.RENDER_DEPLOY_HOOK }}" > /dev/null
 
       - name: Wait for Render deploy to complete
         env:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
           SERVICE_ID: srv-d6sl0b7pm1nc73be8q60
-          DEPLOY_ID: ${{ steps.trigger.outputs.deploy_id }}
         run: |
+          echo "Waiting for deploy to start..."
+          sleep 10
+          DEPLOY_ID=$(curl --fail --silent \
+            -H "Authorization: Bearer $RENDER_API_KEY" \
+            "https://api.render.com/v1/services/$SERVICE_ID/deploys?limit=1" \
+            | jq -r '.[0].id')
           echo "Polling deploy $DEPLOY_ID..."
           for i in $(seq 1 30); do
             STATUS=$(curl --fail --silent \
