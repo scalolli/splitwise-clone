@@ -107,6 +107,7 @@ fun authHandler(userService: UserService, sessionToken: SessionToken): RoutingHt
                     val sessionCookie = Cookie(
                         name = "session",
                         value = sessionToken.sign(result.user.id),
+                        maxAge = 86400,
                         path = "/",
                         httpOnly = true,
                         secure = true,
@@ -135,7 +136,7 @@ fun authHandler(userService: UserService, sessionToken: SessionToken): RoutingHt
                 path = "/",
             )
             Response(Status.FOUND)
-                .header("Location", "/")
+                .header("Location", "/login")
                 .cookie(clearedSession)
         },
     )

@@ -170,7 +170,7 @@ class AuthHandlerTest {
     }
 
     @Test
-    fun `POST logout clears session and redirects to home`() {
+    fun `POST logout clears session and redirects to login`() {
         // register + login to get a session
         app(formRequest(POST, "/register",
             "username" to "grace",
@@ -186,7 +186,7 @@ class AuthHandlerTest {
 
         val response = app(Request(POST, "/logout").cookie("session", sessionCookie.value))
         assertEquals(302, response.status.code)
-        assertEquals("/", response.header("Location"))
+        assertEquals("/login", response.header("Location"))
         // session cookie should be cleared (max-age=0 or empty value)
         val setCookie = response.header("Set-Cookie") ?: ""
         assertTrue(
