@@ -54,6 +54,19 @@ jobs:
           push: true
           tags: ghcr.io/${{ github.repository }}:latest
 
+      - name: Verify Render API key
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+        run: |
+          HTTP_STATUS=$(curl --silent --output /dev/null --write-out "%{http_code}" \
+            -H "Authorization: Bearer $RENDER_API_KEY" \
+            "https://api.render.com/v1/owners?limit=1")
+          echo "Render API auth check: HTTP $HTTP_STATUS"
+          if [ "$HTTP_STATUS" != "200" ]; then
+            echo "Render API authentication failed. Check the RENDER_API_KEY secret."
+            exit 1
+          fi
+
       - name: Trigger Render deploy
         run: curl --fail --silent "${{ secrets.RENDER_DEPLOY_HOOK }}" > /dev/null
 
@@ -64,13 +77,13 @@ jobs:
         run: |
           echo "Waiting for deploy to start..."
           sleep 10
-          DEPLOY_ID=$(curl --fail --silent \
+          DEPLOY_ID=$(curl --silent \
             -H "Authorization: Bearer $RENDER_API_KEY" \
             "https://api.render.com/v1/services/$SERVICE_ID/deploys?limit=1" \
             | jq -r '.[0].id')
           echo "Polling deploy $DEPLOY_ID..."
           for i in $(seq 1 30); do
-            STATUS=$(curl --fail --silent \
+            STATUS=$(curl --silent \
               -H "Authorization: Bearer $RENDER_API_KEY" \
               "https://api.render.com/v1/services/$SERVICE_ID/deploys/$DEPLOY_ID" \
               | jq -r '.status')
