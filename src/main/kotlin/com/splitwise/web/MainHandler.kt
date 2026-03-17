@@ -7,6 +7,9 @@ import org.http4k.core.ContentType
 import org.http4k.core.Method.GET
 import org.http4k.core.Response
 import org.http4k.core.Status
+import org.http4k.core.cookie.Cookie
+import org.http4k.core.cookie.SameSite
+import org.http4k.core.cookie.cookie
 import org.http4k.core.with
 import org.http4k.routing.RoutingHttpHandler
 import org.http4k.routing.bind
@@ -17,6 +20,7 @@ import org.http4k.template.viewModel
 
 data class IndexViewModel(
     val groups: List<Map<String, Any?>>,
+    val csrfToken: String = "",
 ) : ViewModel {
     override fun template() = "index"
 }
@@ -33,7 +37,13 @@ fun mainHandler(groupRepository: GroupRepository, sessionToken: SessionToken): R
             val groups = groupRepository.findByMember(UserId(currentUserId.value)).map { g ->
                 mapOf("id" to g.id.value, "name" to g.name)
             }
-            Response(Status.OK).with(htmlLens of IndexViewModel(groups = groups))
+            val nonce = CsrfToken.generate()
+            Response(Status.OK)
+                .cookie(Cookie(
+                    name = "csrf", value = nonce, maxAge = 3600, path = "/",
+                    httpOnly = true, secure = true, sameSite = SameSite.Strict,
+                ))
+                .with(htmlLens of IndexViewModel(groups = groups, csrfToken = nonce))
         },
     )
 }

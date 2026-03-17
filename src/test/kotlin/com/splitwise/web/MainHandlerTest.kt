@@ -6,7 +6,9 @@ import com.splitwise.persistence.GroupRepository
 import com.splitwise.persistence.ExpenseRepository
 import com.splitwise.persistence.SettlementRepository
 import org.http4k.core.Method.GET
+import org.http4k.core.Method.POST
 import org.http4k.core.Request
+import org.http4k.core.cookie.Cookie
 import org.http4k.core.cookie.cookie
 import org.http4k.core.cookie.cookies
 import org.junit.jupiter.api.Test
@@ -80,5 +82,33 @@ class MainHandlerTest {
         val body = response.bodyString()
         assertTrue(!body.contains("hidden_user"), "Did not expect global user list on home page")
         assertTrue(!body.contains("<h2>Users</h2>"), "Did not expect Users section on home page")
+    }
+
+    @Test
+    fun `GET home embeds csrf token in logout form`() {
+        val session = loginSession("csrf_home", "csrf_home@example.com")
+        val response = app(Request(GET, "/").cookie("session", session))
+        assertEquals(200, response.status.code)
+        assertTrue(response.bodyString().contains("""name="_csrf""""),
+            "Expected _csrf hidden field in logout form on home page")
+    }
+
+    @Test
+    fun `POST logout from home page with csrf token from home page succeeds`() {
+        val session = loginSession("logout_home", "logout_home@example.com")
+        val homeResponse = app(Request(GET, "/").cookie("session", session))
+        val csrfCookie = homeResponse.cookies().find { it.name == "csrf" }!!
+        val csrfToken = Regex("""name="_csrf"\s+value="([^"]+)"""")
+            .find(homeResponse.bodyString())!!.groupValues[1]
+
+        val response = app(
+            Request(POST, "/logout")
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .cookie(Cookie("session", session))
+                .cookie(Cookie("csrf", csrfCookie.value))
+                .body("_csrf=${java.net.URLEncoder.encode(csrfToken, "UTF-8")}")
+        )
+        assertEquals(302, response.status.code)
+        assertEquals("/login", response.header("Location"))
     }
 }

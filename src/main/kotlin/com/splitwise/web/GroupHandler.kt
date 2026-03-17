@@ -11,6 +11,9 @@ import org.http4k.core.ContentType
 import org.http4k.core.Method.GET
 import org.http4k.core.Response
 import org.http4k.core.Status
+import org.http4k.core.cookie.Cookie
+import org.http4k.core.cookie.SameSite
+import org.http4k.core.cookie.cookie
 import org.http4k.core.with
 import org.http4k.routing.RoutingHttpHandler
 import org.http4k.routing.bind
@@ -26,6 +29,7 @@ data class GroupViewModel(
     val members: List<Map<String, Any?>>,
     val expenses: List<Map<String, Any?>>,
     val balances: List<Map<String, Any?>>,
+    val csrfToken: String = "",
 ) : ViewModel {
     override fun template() = "group"
 }
@@ -83,15 +87,22 @@ fun groupHandler(
                 )
             }
 
-            Response(Status.OK).with(
-                htmlLens of GroupViewModel(
-                    groupId = group.id.value,
-                    groupName = group.name,
-                    members = members,
-                    expenses = expenses,
-                    balances = balances,
+            val nonce = CsrfToken.generate()
+            Response(Status.OK)
+                .cookie(Cookie(
+                    name = "csrf", value = nonce, maxAge = 3600, path = "/",
+                    httpOnly = true, secure = true, sameSite = SameSite.Strict,
+                ))
+                .with(
+                    htmlLens of GroupViewModel(
+                        groupId = group.id.value,
+                        groupName = group.name,
+                        members = members,
+                        expenses = expenses,
+                        balances = balances,
+                        csrfToken = nonce,
+                    )
                 )
-            )
         },
     )
 }
