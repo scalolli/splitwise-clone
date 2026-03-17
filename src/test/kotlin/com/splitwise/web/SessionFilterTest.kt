@@ -6,7 +6,6 @@ import com.splitwise.persistence.GroupRepository
 import com.splitwise.persistence.ExpenseRepository
 import com.splitwise.persistence.SettlementRepository
 import org.http4k.core.Method.GET
-import org.http4k.core.Method.POST
 import org.http4k.core.Request
 import org.http4k.core.cookie.cookie
 import org.http4k.core.cookie.cookies
@@ -23,23 +22,8 @@ class SessionFilterTest {
     private val settlementRepository = SettlementRepository(database)
     private val app = buildApp(userRepository, groupRepository, expenseRepository, settlementRepository)
 
-    private fun formRequest(method: org.http4k.core.Method, path: String, vararg pairs: Pair<String, String>) =
-        Request(method, path)
-            .header("Content-Type", "application/x-www-form-urlencoded")
-            .body(pairs.joinToString("&") { (k, v) ->
-                "${java.net.URLEncoder.encode(k, "UTF-8")}=${java.net.URLEncoder.encode(v, "UTF-8")}"
-            })
-
-    private fun loginSession(username: String = "testuser_sf", email: String = "sf@example.com"): String {
-        app(formRequest(POST, "/register",
-            "username" to username, "email" to email,
-            "password" to "secret123", "confirm_password" to "secret123",
-        ))
-        val loginResponse = app(formRequest(POST, "/login",
-            "username" to username, "password" to "secret123",
-        ))
-        return loginResponse.cookies().find { it.name == "session" }!!.value
-    }
+    private fun loginSession(username: String = "testuser_sf", email: String = "sf@example.com"): String =
+        TestHelpers.registerAndLogin(app, username, email)
 
     @Test
     fun `protected route without session redirects to login`() {

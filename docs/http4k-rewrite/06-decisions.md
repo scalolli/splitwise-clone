@@ -293,6 +293,46 @@ database. It is not used by the test suite.
 
 ---
 
+## ADR-018 — CSRF protection via double-submit cookie with per-request nonce
+
+**Status:** Locked
+
+**Decision:** Every state-changing POST (`/register`, `/login`, `/logout`, and all future
+write endpoints) is protected by a CSRF check. The mechanism is:
+
+1. On every GET that renders a form, a cryptographically random nonce (32 bytes, base64url)
+   is generated and placed in two locations simultaneously:
+   - A `csrf` cookie (`HttpOnly=false`, `Secure=true`, `SameSite=Strict`, `Path=/`, short
+     `Max-Age`). `HttpOnly` must be **false** so that server-rendered templates can read it
+     via the ViewModel (the server reads it to embed in the response, not the browser JS).
+     Actually: the server generates the nonce, sets the cookie, and injects the nonce value
+     directly into the ViewModel — no JS access needed. `HttpOnly=true` is correct.
+   - A hidden form field `<input type="hidden" name="_csrf" value="…">` rendered into the
+     HTML form via the ViewModel.
+
+2. On every POST, a filter reads `_csrf` from the form body and the `csrf` cookie from the
+   request. It compares them with constant-time equality. If either is absent or they do not
+   match, the filter returns HTTP 403 immediately without invoking the handler.
+
+3. The nonce is single-use: after a successful POST the GET redirect causes a new nonce to
+   be issued.
+
+**Rationale:** Double-submit cookie is a well-established CSRF defence for server-rendered
+apps. `SameSite=Strict` alone is not sufficient because it relies on browser enforcement and
+does not protect against same-site subdomain attacks. The double-submit pattern requires the
+attacker to read the cookie value — which cross-origin scripts cannot do — making it robust.
+An HMAC-signed token would be stronger but introduces key-management complexity not warranted
+at this scale; a random nonce stored in a short-lived cookie is sufficient.
+
+**Rejected alternatives:**
+- `SameSite=Strict` only: browser-enforced; not a defence-in-depth solution.
+- Synchroniser token pattern (server-side session storage of token): requires server-side
+  session state, which we deliberately avoided (ADR-006).
+- HMAC-signed CSRF token: stronger but over-engineered for this scale; stateless session
+  already provides integrity via ADR-006.
+
+---
+
 ## ADR-017 — Group visibility is membership-scoped
 
 **Status:** Locked

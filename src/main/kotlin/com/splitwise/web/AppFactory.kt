@@ -26,12 +26,16 @@ fun buildApp(
 
     return routes(
         "/health" bind GET to healthHandler,
-        authHandler(userService, sessionToken),
-        sessionFilter.then(
+        csrfFilter.then(
             routes(
-                "/group/create" bind GET to { Response(Status.OK).body("Create Group") },
-                mainHandler(groupRepository, sessionToken),
-                groupHandler(groupRepository, userRepository, expenseRepository, settlementRepository, sessionToken),
+                authHandler(userService, sessionToken),
+                sessionFilter.then(
+                    routes(
+                        "/group/create" bind GET to { Response(Status.OK).body("Create Group") },
+                        mainHandler(groupRepository, sessionToken),
+                        groupHandler(groupRepository, userRepository, expenseRepository, settlementRepository, sessionToken),
+                    )
+                ),
             )
         ),
     )

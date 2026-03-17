@@ -28,6 +28,7 @@ data class RegisterViewModel(
     val errors: List<String> = emptyList(),
     val username: String = "",
     val email: String = "",
+    val csrfToken: String = "",
 ) : ViewModel {
     override fun template() = "register"
 }
@@ -35,6 +36,7 @@ data class RegisterViewModel(
 data class LoginViewModel(
     val error: String? = null,
     val username: String = "",
+    val csrfToken: String = "",
 ) : ViewModel {
     override fun template() = "login"
 }
@@ -49,13 +51,26 @@ private val loginUsernameLens = FormField.defaulted("username", "")
 private val loginPasswordLens = FormField.defaulted("password", "")
 private val loginForm         = Body.webForm(Validator.Feedback, loginUsernameLens, loginPasswordLens).toLens()
 
+private fun csrfCookie(nonce: String) = Cookie(
+    name = "csrf",
+    value = nonce,
+    maxAge = 3600,
+    path = "/",
+    httpOnly = true,
+    secure = true,
+    sameSite = SameSite.Strict,
+)
+
 fun authHandler(userService: UserService, sessionToken: SessionToken): RoutingHttpHandler {
     val renderer = HandlebarsTemplates().CachingClasspath()
     val htmlLens = Body.viewModel(renderer, ContentType.TEXT_HTML).toLens()
 
     return routes(
         "/register" bind GET to {
-            Response(Status.OK).with(htmlLens of RegisterViewModel())
+            val nonce = CsrfToken.generate()
+            Response(Status.OK)
+                .cookie(csrfCookie(nonce))
+                .with(htmlLens of RegisterViewModel(csrfToken = nonce))
         },
 
         "/register" bind POST to { request: Request ->
@@ -81,20 +96,27 @@ fun authHandler(userService: UserService, sessionToken: SessionToken): RoutingHt
                         .cookie(flashCookie)
                 }
                 is RegistrationResult.Failure -> {
-                    Response(Status.BAD_REQUEST).with(
-                        htmlLens of RegisterViewModel(
-                            errors = result.errors,
-                            username = username,
-                            email = email,
+                    val nonce = CsrfToken.generate()
+                    Response(Status.BAD_REQUEST)
+                        .cookie(csrfCookie(nonce))
+                        .with(
+                            htmlLens of RegisterViewModel(
+                                errors = result.errors,
+                                username = username,
+                                email = email,
+                                csrfToken = nonce,
+                            )
                         )
-                    )
                 }
             }
         },
 
         "/login" bind GET to { request: Request ->
             val flash = request.cookie("flash")?.value
-            Response(Status.OK).with(htmlLens of LoginViewModel(error = flash))
+            val nonce = CsrfToken.generate()
+            Response(Status.OK)
+                .cookie(csrfCookie(nonce))
+                .with(htmlLens of LoginViewModel(error = flash, csrfToken = nonce))
         },
 
         "/login" bind POST to { request: Request ->
@@ -118,12 +140,16 @@ fun authHandler(userService: UserService, sessionToken: SessionToken): RoutingHt
                         .cookie(sessionCookie)
                 }
                 AuthResult.InvalidCredentials -> {
-                    Response(Status.OK).with(
-                        htmlLens of LoginViewModel(
-                            error = "Invalid username or password",
-                            username = username,
+                    val nonce = CsrfToken.generate()
+                    Response(Status.OK)
+                        .cookie(csrfCookie(nonce))
+                        .with(
+                            htmlLens of LoginViewModel(
+                                error = "Invalid username or password",
+                                username = username,
+                                csrfToken = nonce,
+                            )
                         )
-                    )
                 }
             }
         },

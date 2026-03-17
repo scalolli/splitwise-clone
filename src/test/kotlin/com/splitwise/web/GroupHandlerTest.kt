@@ -8,7 +8,6 @@ import com.splitwise.persistence.PostgresTestSupport
 import com.splitwise.persistence.SettlementRepository
 import com.splitwise.persistence.UserRepository
 import org.http4k.core.Method.GET
-import org.http4k.core.Method.POST
 import org.http4k.core.Request
 import org.http4k.core.cookie.cookie
 import org.http4k.core.cookie.cookies
@@ -33,29 +32,8 @@ class GroupHandlerTest {
         sessionSecret = sessionSecret,
     )
 
-    private fun formBody(vararg pairs: Pair<String, String>): String =
-        pairs.joinToString("&") { (k, v) ->
-            "${java.net.URLEncoder.encode(k, "UTF-8")}=${java.net.URLEncoder.encode(v, "UTF-8")}"
-        }
-
-    private fun formRequest(method: org.http4k.core.Method, path: String, vararg pairs: Pair<String, String>) =
-        Request(method, path)
-            .header("Content-Type", "application/x-www-form-urlencoded")
-            .body(formBody(*pairs))
-
-    private fun registerAndLogin(username: String, email: String, password: String = "secret123"): String {
-        app(formRequest(POST, "/register",
-            "username" to username,
-            "email" to email,
-            "password" to password,
-            "confirm_password" to password,
-        ))
-        val loginResponse = app(formRequest(POST, "/login",
-            "username" to username,
-            "password" to password,
-        ))
-        return loginResponse.cookies().find { it.name == "session" }!!.value
-    }
+    private fun registerAndLogin(username: String, email: String, password: String = "secret123"): String =
+        TestHelpers.registerAndLogin(app, username, email, password)
 
     @Test
     fun `GET group returns 404 for non-existent group`() {
