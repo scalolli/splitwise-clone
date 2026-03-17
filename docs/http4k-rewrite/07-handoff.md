@@ -23,7 +23,11 @@ The next agent (or human) picks up exactly from "Next action".
 | Session filter | `web/SessionFilter.kt` | Reads `session` cookie (value = userId Long); redirects to `/login` if absent |
 | Auth handler | `web/AuthHandler.kt` | `GET/POST /register`, `GET/POST /login`, `POST /logout`; flash cookie for messages; session `maxAge=86400` (1 day); logout redirects to `/login` |
 | Main handler | `web/MainHandler.kt` | `GET /`; lists all groups and users via Handlebars template |
-| App factory | `web/AppFactory.kt` | `buildApp(userRepository, groupRepository)` — wires all handlers; used by tests and `App.kt` |
+| Settlement repository | `persistence/SettlementRepository.kt` | `create`, `findByGroup`; used by BalanceService |
+| Balance service | `service/BalanceService.kt` | wires `BalanceCalculator` + `ExpenseRepository` + `SettlementRepository` |
+| Group handler | `web/GroupHandler.kt` | `GET /group/{id}`: 200 with members/expenses/balances, 404 for unknown group, 302 to `/login` if unauthenticated |
+| App factory | `web/AppFactory.kt` | `buildApp(userRepository, groupRepository, expenseRepository, settlementRepository)` — all four repos now required; `/group/create` placeholder restored as protected route |
+| Templates | `src/main/resources/group.hbs` added | Renders group name, member list, expense table (description/amount/payer), balance list |
 | Templates | `src/main/resources/register.hbs`, `login.hbs`, `index.hbs`, `base.hbs` | Handlebars classpath templates; `index.hbs` and `base.hbs` have POST logout form button; register/login links removed from authenticated nav |
 | Test infrastructure | `test/persistence/PostgresTestSupport.kt` | Singleton Testcontainers container; `freshDatabase()` for a migrated `Database` |
 | DB smoke tests | `test/persistence/DatabaseIntegrationSmokeTest.kt` | Verifies connection and Flyway idempotency |
@@ -31,24 +35,26 @@ The next agent (or human) picks up exactly from "Next action".
 | Security | `web/SessionToken.kt`, `web/SessionFilter.kt`, `web/AuthHandler.kt`, `service/UserService.kt`, `domain/User.kt`, `persistence/UserRepository.kt` | HMAC-SHA256 signed session token, password/email validation, secure cookie attributes, no passwordHash on domain model, hardcoded DB credentials removed |
 | Local dev DB | `docker-compose.yml` | `docker compose up -d` starts Postgres on `5432`; credentials `splitwise/splitwise/splitwise` |
 
-**Not yet started:** settlement repository, group detail page, create group/expense forms, edit/delete flows, error pages, deployment config, PWA assets.
+**Not yet started:** create group/expense forms, edit/delete flows, error pages, deployment config, PWA assets.
 
 ---
 
 ## Next action
 
-**Start SLICE-V02: Group detail page.**
+**Start SLICE-V03: Create group and add expense.**
 
-CI/CD pipeline is verified and working end-to-end. Deployment to Render is confirmed.
+All tests green. Commit: `569bd33 feat: SLICE-V02 group detail page with members, expenses and balances`.
 
-### SLICE-V02: Group detail page
+### SLICE-V03: Create group and add expense
 
-1. Read SLICE-V02 in `04-iteration-backlog.md`.
-2. Write failing tests first: `GET /group/:id` renders group name, member list, expense list, and net balances.
-3. Implement `SettlementRepository` (deferred from earlier — first needed here for balance display).
-4. Implement `GroupHandler` and `group.hbs` template.
-5. Run `./gradlew test` — all tests green.
-6. Commit: `feat: group detail page`.
+1. Read SLICE-V03 in `04-iteration-backlog.md`.
+2. Write failing tests first (see spec for the full list including all 7 expense validation rules).
+3. Implement `GroupService.createGroup(...)`.
+4. Implement `ExpenseService.addExpense(...)`.
+5. Implement `POST /group/create` in `GroupHandler.kt` and `POST /group/{id}/add_expense` in a new `ExpenseHandler.kt`.
+6. Add `create_group.hbs` and `add_expense.hbs` templates.
+7. Run `./gradlew test` — all tests green.
+8. Commit: `feat: create group and add expense`.
 
 ## Slice status
 
@@ -68,7 +74,7 @@ CI/CD pipeline is verified and working end-to-end. Deployment to Render is confi
 | SLICE-V01 | Register, login, home page | `done` |
 | SLICE-SEC | Security hardening | `done` |
 | SLICE-DEPLOY | CI/CD + Render deployment | `done` |
-| SLICE-V02 | Group detail page | `todo` |
+| SLICE-V02 | Group detail page | `done` |
 | SLICE-V03 | Create group and add expense | `todo` |
 | SLICE-V04 | Edit group and manage members | `todo` |
 | SLICE-V05 | Edit and delete expense | `todo` |
@@ -87,6 +93,14 @@ CI/CD pipeline is verified and working end-to-end. Deployment to Render is confi
 | `docs/http4k-rewrite/06-decisions.md` | Locked ADRs — check before making any architectural choice |
 | `docs/http4k-rewrite/08-functionality-checklist.md` | Consolidated functionality checklist |
 | `docs/http4k-rewrite/05-testing-strategy.md` | Postgres/Testcontainers testing approach |
+
+## Notes from SLICE-V02
+
+- `buildApp` signature now requires all four repos explicitly (`userRepository`, `groupRepository`, `expenseRepository`, `settlementRepository`). All test files updated accordingly.
+- `GroupHandler` resolves member usernames and payer names from `UserRepository` before passing data to the template — the template receives plain `Map<String, Any?>` lists, keeping the view model simple.
+- `BalanceService` is a thin coordinator: it delegates to `BalanceCalculator.calculate(expenses, settlements)` — no business logic lives in the service layer.
+- `SettlementRepository` is minimal for now (`create` + `findByGroup`) — extended in SLICE-V06 when the settle form is added.
+- `SessionFilterTest` relies on `GET /group/create` returning 200 for an authenticated user. This placeholder is kept in `AppFactory` until SLICE-V03 replaces it with the real handler.
 
 ## Notes from this session
 
