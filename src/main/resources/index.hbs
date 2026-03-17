@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Splitwise</title>
+</head>
+<body>
+    <h1>Splitwise</h1>
+    <nav>
+        <a href="/register">Register</a> |
+        <a href="/login">Login</a>
+    </nav>
+
+    <h2>Groups</h2>
+    {{#if groups}}
+    <ul>
+        {{#each groups}}
+        <li><a href="/group/{{id}}">{{name}}</a></li>
+        {{/each}}
+    </ul>
+    {{else}}
+    <p>No groups yet.</p>
+    {{/if}}
+
+    <h2>Users</h2>
+    {{#if users}}
+    <ul>
+        {{#each users}}
+        <li>{{username}}</li>
+        {{/each}}
+    </ul>
+    {{else}}
+    <p>No users yet.</p>
+    {{/if}}
+</body>
+</html>

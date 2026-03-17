@@ -25,13 +25,11 @@ class CoreDomainEntitiesTest {
             id = aliceId,
             username = "alice",
             email = "alice@example.com",
-            passwordHash = "hashed-password",
         )
         val bob = User(
             id = bobId,
             username = "bob",
             email = "bob@example.com",
-            passwordHash = "hashed-password",
         )
         val group = Group(
             id = groupId,

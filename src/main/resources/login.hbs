@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login - Splitwise</title>
+</head>
+<body>
+    <h1>Login</h1>
+    {{#if error}}
+    <p>{{error}}</p>
+    {{/if}}
+    <form method="post" action="/login">
+        <label>Username<br>
+            <input type="text" name="username" value="{{username}}">
+        </label><br>
+        <label>Password<br>
+            <input type="password" name="password">
+        </label><br>
+        <button type="submit">Login</button>
+    </form>
+    <p><a href="/register">No account? Register</a></p>
+</body>
+</html>

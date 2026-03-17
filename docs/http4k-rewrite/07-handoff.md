@@ -16,32 +16,34 @@ The next agent (or human) picks up exactly from "Next action".
 | Business logic | `domain/BalanceCalculator.kt`, `domain/ExpenseValidator.kt` | Fully unit tested |
 | Database layer | `persistence/Database.kt`, `persistence/Tables.kt` | Wraps Exposed DSL + Flyway; provides `connect()`, `migrate()`, `transaction {}` |
 | Schema | `src/main/resources/db/migration/V1__initial_schema.sql` | 6 tables: `users`, `groups`, `group_members`, `expenses`, `expense_shares`, `settlements` |
-| User repository | `persistence/UserRepository.kt` | `save`, `findById`, `findByUsername`, `findByEmail`; all tests pass |
+| User repository | `persistence/UserRepository.kt` | `save`, `findAll`, `findById`, `findByUsername`, `findByEmail`; all tests pass |
 | Group repository | `persistence/GroupRepository.kt` | `create`, `findById`, `findAll`, `addMember`, `removeMember`; all tests pass |
 | Expense repository | `persistence/ExpenseRepository.kt` | `create`, `findById`, `findByGroup`, `update`, `delete`; all tests pass |
-| Test infrastructure | `test/persistence/PostgresTestSupport.kt` | Singleton Testcontainers container; `freshConfig()` for raw DB config; `freshDatabase()` for a migrated `Database` ready for repository tests |
+| User service | `service/UserService.kt` | `register` (BCrypt hash, validation) + `authenticate`; used by AuthHandler |
+| Session filter | `web/SessionFilter.kt` | Reads `session` cookie (value = userId Long); redirects to `/login` if absent |
+| Auth handler | `web/AuthHandler.kt` | `GET/POST /register`, `GET/POST /login`, `GET /logout`; flash cookie for messages |
+| Main handler | `web/MainHandler.kt` | `GET /`; lists all groups and users via Handlebars template |
+| App factory | `web/AppFactory.kt` | `buildApp(userRepository, groupRepository)` — wires all handlers; used by tests and `App.kt` |
+| Templates | `src/main/resources/register.hbs`, `login.hbs`, `index.hbs`, `base.hbs` | Handlebars classpath templates |
+| Test infrastructure | `test/persistence/PostgresTestSupport.kt` | Singleton Testcontainers container; `freshDatabase()` for a migrated `Database` |
 | DB smoke tests | `test/persistence/DatabaseIntegrationSmokeTest.kt` | Verifies connection and Flyway idempotency |
 | CI | `.github/workflows/kotlin.yml` | Runs `./gradlew test` on `ubuntu-latest` (Docker available); green |
 | Local dev DB | `docker-compose.yml` | `docker compose up -d` starts Postgres on `5432`; credentials `splitwise/splitwise/splitwise` |
 
-**Not yet started:** service layer, expense/settlement repository implementations, all HTTP handlers beyond `/health`, Handlebars templates, BCrypt auth, session filter, PWA assets.
+**Not yet started:** settlement repository, group detail page, create group/expense forms, edit/delete flows, error pages, deployment config, PWA assets.
 
 ---
 
 ## Next action
 
-**Start SLICE-V01: Register, login, home page.**
+**Start SLICE-V02: Group detail page.**
 
-1. Read SLICE-V01 in `04-iteration-backlog.md`.
-2. Add BCrypt dependency to `build.gradle.kts` before writing any service code.
-3. Write failing tests first — work handler by handler: register, then login/logout, then home page, then session filter.
-4. Implement `UserService`, `AuthHandler`, `MainHandler`, `SessionFilter`, and all four templates.
-5. Run `./gradlew test` — all tests must be green before committing.
-6. Commit: `feat: register, login, home page`.
-
-**Key note on slice ordering:** The backlog has been restructured into vertical slices
-(SLICE-V01 through SLICE-V09). Each slice delivers end-to-end user-visible value.
-`SettlementRepository` is deferred to SLICE-V02 where it is first needed.
+1. Read SLICE-V02 in `04-iteration-backlog.md`.
+2. Write failing tests first: `GET /group/:id` renders group name, member list, expense list, and net balances.
+3. Implement `SettlementRepository` (deferred from earlier — first needed here for balance display).
+4. Implement `GroupHandler` and `group.hbs` template.
+5. Run `./gradlew test` — all tests green.
+6. Commit: `feat: group detail page`.
 
 ## Slice status
 
@@ -58,7 +60,7 @@ The next agent (or human) picks up exactly from "Next action".
 | SLICE-008 | User repository | `done` |
 | SLICE-009 | Group repository | `done` |
 | SLICE-010 | Expense repository | `done` |
-| SLICE-V01 | Register, login, home page | `todo` |
+| SLICE-V01 | Register, login, home page | `done` |
 | SLICE-V02 | Group detail page | `todo` |
 | SLICE-V03 | Create group and add expense | `todo` |
 | SLICE-V04 | Edit group and manage members | `todo` |
@@ -79,7 +81,15 @@ The next agent (or human) picks up exactly from "Next action".
 | `docs/http4k-rewrite/08-functionality-checklist.md` | Consolidated functionality checklist |
 | `docs/http4k-rewrite/05-testing-strategy.md` | Postgres/Testcontainers testing approach |
 
-## Non-negotiable rules
+## Notes from SLICE-V01
+
+- `Response.cookie(name)` does not exist in http4k 5.x — use `response.cookies().find { it.name == "..." }` for Response. The `cookie(name)` getter exists only for `Request`.
+- `routes()` only accepts `vararg RoutingHttpHandler` — handler factory functions must declare return type as `RoutingHttpHandler`, not `HttpHandler`.
+- `Filter.then(RoutingHttpHandler)` returns `RoutingHttpHandler`; `Filter.then(HttpHandler)` returns plain `Function1<Request, Response>`. Use the `RoutingHttpHandler` form when the result must be passed to `routes()`.
+- Session cookie value is the user's `id` (a Long) serialized as a String — simple, no signing. Acceptable for development; revisit before production in SLICE-V08.
+- `HandlebarsTemplates().CachingClasspath()` loads `.hbs` files from the classpath root using `/{templateName}.hbs`.
+
+---
 
 - TDD: failing test before any production code. No exceptions.
 - Update this file (07-handoff.md) at the end of every session.

@@ -1,6 +1,7 @@
 package com.splitwise.persistence
 
 import com.splitwise.domain.User
+import com.splitwise.domain.UserCredentials
 import com.splitwise.domain.UserId
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.insert
@@ -17,12 +18,7 @@ class UserRepository(private val database: Database) {
                 it[UsersTable.passwordHash] = passwordHash
             } get UsersTable.id
 
-            User(
-                id = UserId(id),
-                username = username,
-                email = email,
-                passwordHash = passwordHash,
-            )
+            User(id = UserId(id), username = username, email = email)
         }
 
     fun findById(id: UserId): User? =
@@ -34,7 +30,6 @@ class UserRepository(private val database: Database) {
                         id = UserId(row[UsersTable.id]),
                         username = row[UsersTable.username],
                         email = row[UsersTable.email],
-                        passwordHash = row[UsersTable.passwordHash],
                     )
                 }
         }
@@ -48,7 +43,6 @@ class UserRepository(private val database: Database) {
                         id = UserId(row[UsersTable.id]),
                         username = row[UsersTable.username],
                         email = row[UsersTable.email],
-                        passwordHash = row[UsersTable.passwordHash],
                     )
                 }
         }
@@ -62,8 +56,34 @@ class UserRepository(private val database: Database) {
                         id = UserId(row[UsersTable.id]),
                         username = row[UsersTable.username],
                         email = row[UsersTable.email],
+                    )
+                }
+        }
+
+    fun findForAuth(username: String): UserCredentials? =
+        transaction(database.exposed) {
+            UsersTable.selectAll().where(UsersTable.username eq username)
+                .singleOrNull()
+                ?.let { row ->
+                    UserCredentials(
+                        user = User(
+                            id = UserId(row[UsersTable.id]),
+                            username = row[UsersTable.username],
+                            email = row[UsersTable.email],
+                        ),
                         passwordHash = row[UsersTable.passwordHash],
                     )
                 }
+        }
+
+    fun findAll(): List<User> =
+        transaction(database.exposed) {
+            UsersTable.selectAll().map { row ->
+                User(
+                    id = UserId(row[UsersTable.id]),
+                    username = row[UsersTable.username],
+                    email = row[UsersTable.email],
+                )
+            }
         }
 }

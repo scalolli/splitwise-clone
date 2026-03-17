@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Register - Splitwise</title>
+</head>
+<body>
+    <h1>Register</h1>
+    {{#if errors}}
+    <ul>
+        {{#each errors}}
+        <li>{{this}}</li>
+        {{/each}}
+    </ul>
+    {{/if}}
+    <form method="post" action="/register">
+        <label>Username<br>
+            <input type="text" name="username" value="{{username}}">
+        </label><br>
+        <label>Email<br>
+            <input type="email" name="email" value="{{email}}">
+        </label><br>
+        <label>Password<br>
+            <input type="password" name="password">
+        </label><br>
+        <label>Confirm Password<br>
+            <input type="password" name="confirm_password">
+        </label><br>
+        <button type="submit">Register</button>
+    </form>
+    <p><a href="/login">Already have an account? Log in</a></p>
+</body>
+</html>
