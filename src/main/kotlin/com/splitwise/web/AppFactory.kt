@@ -7,8 +7,6 @@ import com.splitwise.persistence.UserRepository
 import com.splitwise.service.UserService
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method.GET
-import org.http4k.core.Response
-import org.http4k.core.Status
 import org.http4k.core.then
 import org.http4k.routing.bind
 import org.http4k.routing.routes
@@ -31,9 +29,9 @@ fun buildApp(
                 authHandler(userService, sessionToken),
                 sessionFilter.then(
                     routes(
-                        "/group/create" bind GET to { Response(Status.OK).body("Create Group") },
                         mainHandler(groupRepository, sessionToken),
                         groupHandler(groupRepository, userRepository, expenseRepository, settlementRepository, sessionToken),
+                        expenseHandler(groupRepository, userRepository, expenseRepository, sessionToken),
                     )
                 ),
             )

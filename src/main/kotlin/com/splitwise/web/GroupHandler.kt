@@ -6,9 +6,11 @@ import com.splitwise.persistence.GroupRepository
 import com.splitwise.persistence.SettlementRepository
 import com.splitwise.persistence.UserRepository
 import com.splitwise.service.BalanceService
+import com.splitwise.service.GroupService
 import org.http4k.core.Body
 import org.http4k.core.ContentType
 import org.http4k.core.Method.GET
+import org.http4k.core.Method.POST
 import org.http4k.core.Response
 import org.http4k.core.Status
 import org.http4k.core.cookie.Cookie
@@ -34,6 +36,34 @@ data class GroupViewModel(
     override fun template() = "group"
 }
 
+data class CreateGroupViewModel(
+    val errors: List<String> = emptyList(),
+    val name: String = "",
+    val csrfToken: String = "",
+) : ViewModel {
+    override fun template() = "create_group"
+}
+
+private fun flashCookie(message: String) = Cookie(
+    name = "flash",
+    value = message,
+    maxAge = 60,
+    path = "/",
+    httpOnly = true,
+    secure = true,
+    sameSite = SameSite.Strict,
+)
+
+private fun csrfCookie(nonce: String) = Cookie(
+    name = "csrf",
+    value = nonce,
+    maxAge = 3600,
+    path = "/",
+    httpOnly = true,
+    secure = true,
+    sameSite = SameSite.Strict,
+)
+
 fun groupHandler(
     groupRepository: GroupRepository,
     userRepository: UserRepository,
@@ -44,8 +74,42 @@ fun groupHandler(
     val renderer = HandlebarsTemplates().CachingClasspath()
     val htmlLens = Body.viewModel(renderer, ContentType.TEXT_HTML).toLens()
     val balanceService = BalanceService(expenseRepository, settlementRepository)
+    val groupService = GroupService(groupRepository)
 
     return routes(
+        "/group/create" bind GET to { request ->
+            val currentUserId = request.sessionUserId(sessionToken)
+                ?: return@to Response(Status.FOUND).header("Location", "/login")
+            val nonce = CsrfToken.generate()
+            Response(Status.OK)
+                .cookie(csrfCookie(nonce))
+                .with(htmlLens of CreateGroupViewModel(csrfToken = nonce))
+        },
+
+        "/group/create" bind POST to { request ->
+            val currentUserId = request.sessionUserId(sessionToken)
+                ?: return@to Response(Status.FOUND).header("Location", "/login")
+
+            val params = parseFormBody(request.bodyString())
+            val name = params["name"]?.firstOrNull()?.trim() ?: ""
+
+            if (name.isEmpty()) {
+                val nonce = CsrfToken.generate()
+                return@to Response(Status.BAD_REQUEST)
+                    .cookie(csrfCookie(nonce))
+                    .with(htmlLens of CreateGroupViewModel(
+                        errors = listOf("Group name is required"),
+                        name = name,
+                        csrfToken = nonce,
+                    ))
+            }
+
+            val group = groupService.createGroup(name = name, creatorId = currentUserId)
+            Response(Status.FOUND)
+                .header("Location", "/group/${group.id.value}")
+                .cookie(flashCookie("Group created successfully"))
+        },
+
         "/group/{id}" bind GET to { request ->
             val currentUserId = request.sessionUserId(sessionToken)
                 ?: return@to Response(Status.FOUND).header("Location", "/login")
@@ -89,10 +153,7 @@ fun groupHandler(
 
             val nonce = CsrfToken.generate()
             Response(Status.OK)
-                .cookie(Cookie(
-                    name = "csrf", value = nonce, maxAge = 3600, path = "/",
-                    httpOnly = true, secure = true, sameSite = SameSite.Strict,
-                ))
+                .cookie(csrfCookie(nonce))
                 .with(
                     htmlLens of GroupViewModel(
                         groupId = group.id.value,

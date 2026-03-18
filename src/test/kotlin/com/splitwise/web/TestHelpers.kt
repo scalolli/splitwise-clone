@@ -21,9 +21,13 @@ object TestHelpers {
     /**
      * Fetch a fresh CSRF nonce from a GET page.
      * Returns (cookieValue, formFieldValue).
+     * Pass [sessionCookie] for protected pages that require authentication.
      */
-    fun getCsrfToken(app: HttpHandler, path: String): Pair<String, String> {
-        val getResponse = app(Request(GET, path))
+    fun getCsrfToken(app: HttpHandler, path: String, sessionCookie: String? = null): Pair<String, String> {
+        val request = Request(GET, path).let { req ->
+            if (sessionCookie != null) req.cookie("session", sessionCookie) else req
+        }
+        val getResponse = app(request)
         val csrfCookie = getResponse.cookies().find { it.name == "csrf" }
             ?: error("No csrf cookie on GET $path")
         val body = getResponse.bodyString()
