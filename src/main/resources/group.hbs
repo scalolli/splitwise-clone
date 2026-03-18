@@ -52,12 +52,37 @@
     <h2>Balances</h2>
     {{#if balances}}
     <ul>
-        {{#each balances}}
-        <li>{{debtor}} owes {{creditor}} {{amount}}</li>
-        {{/each}}
+        {{#each balances}}<li>{{debtor}} owes {{creditor}} {{amount}}</li>{{/each}}
     </ul>
-    {{else}}
-    <p>All settled up!</p>
+    {{else}}<p>All settled up!</p>{{/if}}
+
+    <h2>Record Settlement</h2>
+    {{#if settlementErrors}}
+    <ul class="errors">
+        {{#each settlementErrors}}<li>{{this}}</li>{{/each}}
+    </ul>
     {{/if}}
+    <form method="post" action="/group/{{groupId}}/settle">
+        <input type="hidden" name="_csrf" value="{{csrfToken}}">
+        <label>From:
+            <select name="from_user_id">
+                {{#each members}}<option value="{{id}}">{{username}}</option>{{/each}}
+            </select>
+        </label>
+        <label>To:
+            <select name="to_user_id">
+                {{#each members}}<option value="{{id}}">{{username}}</option>{{/each}}
+            </select>
+        </label>
+        <label>Amount: <input type="text" name="amount" placeholder="0.00"></label>
+        <button type="submit">Record Settlement</button>
+    </form>
+
+    <h2>Settlement History</h2>
+    {{#if settlements}}
+    <ul>
+        {{#each settlements}}<li>{{from}} paid {{to}} {{amount}}</li>{{/each}}
+    </ul>
+    {{else}}<p>No settlements yet.</p>{{/if}}
 </body>
 </html>

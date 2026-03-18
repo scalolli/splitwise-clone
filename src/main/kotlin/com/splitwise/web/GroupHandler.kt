@@ -1,6 +1,7 @@
 package com.splitwise.web
 
 import com.splitwise.domain.GroupId
+import com.splitwise.domain.Money
 import com.splitwise.domain.UserId
 import com.splitwise.persistence.ExpenseRepository
 import com.splitwise.persistence.GroupRepository
@@ -8,6 +9,7 @@ import com.splitwise.persistence.SettlementRepository
 import com.splitwise.persistence.UserRepository
 import com.splitwise.service.BalanceService
 import com.splitwise.service.GroupService
+import com.splitwise.service.SettlementService
 import org.http4k.core.Body
 import org.http4k.core.ContentType
 import org.http4k.core.Method.GET
@@ -32,6 +34,8 @@ data class GroupViewModel(
     val members: List<Map<String, Any?>>,
     val expenses: List<Map<String, Any?>>,
     val balances: List<Map<String, Any?>>,
+    val settlements: List<Map<String, Any?>> = emptyList(),
+    val settlementErrors: List<String> = emptyList(),
     val csrfToken: String = "",
 ) : ViewModel {
     override fun template() = "group"
@@ -86,6 +90,7 @@ fun groupHandler(
     val htmlLens = Body.viewModel(renderer, ContentType.TEXT_HTML).toLens()
     val balanceService = BalanceService(expenseRepository, settlementRepository)
     val groupService = GroupService(groupRepository, userRepository)
+    val settlementService = SettlementService(settlementRepository, groupRepository)
 
     return routes(
         "/group/create" bind GET to { request ->
@@ -262,6 +267,17 @@ fun groupHandler(
                 )
             }
 
+            val allUserMap = buildAllUserMap(userRepository)
+            val settlements = settlementService.forGroup(group.id).map { s ->
+                val fromName = allUserMap[s.fromUserId] ?: s.fromUserId.value.toString()
+                val toName = allUserMap[s.toUserId] ?: s.toUserId.value.toString()
+                mapOf(
+                    "from" to fromName,
+                    "to" to toName,
+                    "amount" to s.amount.value.toPlainString(),
+                )
+            }
+
             val nonce = CsrfToken.generate()
             Response(Status.OK)
                 .cookie(csrfCookie(nonce))
@@ -272,9 +288,91 @@ fun groupHandler(
                         members = members,
                         expenses = expenses,
                         balances = balances,
+                        settlements = settlements,
                         csrfToken = nonce,
                     )
                 )
         },
+
+        "/group/{id}/settle" bind POST to { request ->
+            val currentUserId = request.sessionUserId(sessionToken)
+                ?: return@to Response(Status.FOUND).header("Location", "/login")
+            val idParam = request.path("id")?.toLongOrNull()
+                ?: return@to Response(Status.NOT_FOUND)
+
+            val group = groupRepository.findById(GroupId(idParam))
+                ?: return@to Response(Status.NOT_FOUND)
+
+            if (group.memberIds.none { it == currentUserId }) {
+                return@to Response(Status.FORBIDDEN)
+            }
+
+            fun reRenderWithError(errors: List<String>): Response {
+                val userMap = group.memberIds
+                    .mapNotNull { uid -> userRepository.findById(uid)?.let { uid to it } }
+                    .toMap()
+                val members = group.memberIds.map { uid ->
+                    mapOf("id" to uid.value, "username" to (userMap[uid]?.username ?: uid.value.toString()))
+                }
+                val expenses = expenseRepository.findByGroup(group.id).map { expense ->
+                    val payerName = userMap[expense.payerId]?.username ?: expense.payerId.value.toString()
+                    mapOf("id" to expense.id.value, "description" to expense.description,
+                          "amount" to expense.amount.value.toPlainString(), "payer" to payerName)
+                }
+                val balances = balanceService.balancesForGroup(group.id).map { balance ->
+                    val debtorName = userMap[balance.debtorId]?.username ?: balance.debtorId.value.toString()
+                    val creditorName = userMap[balance.creditorId]?.username ?: balance.creditorId.value.toString()
+                    mapOf("debtor" to debtorName, "creditor" to creditorName,
+                          "amount" to balance.amount.value.toPlainString())
+                }
+                val allUserMap = buildAllUserMap(userRepository)
+                val settlements = settlementService.forGroup(group.id).map { s ->
+                    val fromName = allUserMap[s.fromUserId] ?: s.fromUserId.value.toString()
+                    val toName = allUserMap[s.toUserId] ?: s.toUserId.value.toString()
+                    mapOf("from" to fromName, "to" to toName, "amount" to s.amount.value.toPlainString())
+                }
+                val nonce = CsrfToken.generate()
+                return Response(Status.BAD_REQUEST)
+                    .cookie(csrfCookie(nonce))
+                    .with(htmlLens of GroupViewModel(
+                        groupId = group.id.value,
+                        groupName = group.name,
+                        members = members,
+                        expenses = expenses,
+                        balances = balances,
+                        settlements = settlements,
+                        settlementErrors = errors,
+                        csrfToken = nonce,
+                    ))
+            }
+
+            val params = parseFormBody(request.bodyString())
+            val fromUserId = params["from_user_id"]?.firstOrNull()?.toLongOrNull()?.let { UserId(it) }
+            val toUserId = params["to_user_id"]?.firstOrNull()?.toLongOrNull()?.let { UserId(it) }
+            val amountStr = params["amount"]?.firstOrNull()?.trim() ?: ""
+            val amountDecimal = amountStr.toBigDecimalOrNull()
+
+            if (fromUserId == null || toUserId == null || amountDecimal == null) {
+                return@to reRenderWithError(listOf("Invalid settlement data"))
+            }
+            if (amountDecimal <= java.math.BigDecimal.ZERO) {
+                return@to reRenderWithError(listOf("Amount must be greater than zero"))
+            }
+            val amount = Money(amountDecimal)
+
+            settlementService.record(group.id, fromUserId, toUserId, amount).fold(
+                onSuccess = {
+                    Response(Status.FOUND)
+                        .header("Location", "/group/$idParam")
+                        .cookie(flashCookie("Settlement recorded successfully"))
+                },
+                onFailure = { error ->
+                    reRenderWithError(listOf(error.message ?: "Could not record settlement"))
+                },
+            )
+        },
     )
 }
+
+private fun buildAllUserMap(userRepository: UserRepository): Map<UserId, String> =
+    userRepository.findAll().associate { it.id to it.username }
