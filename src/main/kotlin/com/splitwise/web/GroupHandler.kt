@@ -1,6 +1,7 @@
 package com.splitwise.web
 
 import com.splitwise.domain.GroupId
+import com.splitwise.domain.UserId
 import com.splitwise.persistence.ExpenseRepository
 import com.splitwise.persistence.GroupRepository
 import com.splitwise.persistence.SettlementRepository
@@ -44,6 +45,16 @@ data class CreateGroupViewModel(
     override fun template() = "create_group"
 }
 
+data class EditGroupViewModel(
+    val groupId: Long,
+    val groupName: String,
+    val members: List<Map<String, Any?>>,
+    val errors: List<String> = emptyList(),
+    val csrfToken: String = "",
+) : ViewModel {
+    override fun template() = "edit_group"
+}
+
 private fun flashCookie(message: String) = Cookie(
     name = "flash",
     value = message,
@@ -74,7 +85,7 @@ fun groupHandler(
     val renderer = HandlebarsTemplates().CachingClasspath()
     val htmlLens = Body.viewModel(renderer, ContentType.TEXT_HTML).toLens()
     val balanceService = BalanceService(expenseRepository, settlementRepository)
-    val groupService = GroupService(groupRepository)
+    val groupService = GroupService(groupRepository, userRepository)
 
     return routes(
         "/group/create" bind GET to { request ->
@@ -108,6 +119,106 @@ fun groupHandler(
             Response(Status.FOUND)
                 .header("Location", "/group/${group.id.value}")
                 .cookie(flashCookie("Group created successfully"))
+        },
+
+        "/group/{id}/edit" bind GET to { request ->
+            val currentUserId = request.sessionUserId(sessionToken)
+                ?: return@to Response(Status.FOUND).header("Location", "/login")
+            val idParam = request.path("id")?.toLongOrNull()
+                ?: return@to Response(Status.NOT_FOUND)
+            val group = groupRepository.findById(GroupId(idParam))
+                ?: return@to Response(Status.NOT_FOUND)
+
+            if (group.creatorId != currentUserId) {
+                return@to Response(Status.FOUND)
+                    .header("Location", "/group/$idParam")
+                    .cookie(flashCookie("You do not have permission to edit this group"))
+            }
+
+            val userMap = group.memberIds
+                .mapNotNull { uid -> userRepository.findById(uid)?.let { uid to it } }
+                .toMap()
+            val members = group.memberIds.map { uid ->
+                mapOf("id" to uid.value, "username" to (userMap[uid]?.username ?: uid.value.toString()))
+            }
+
+            val nonce = CsrfToken.generate()
+            Response(Status.OK)
+                .cookie(csrfCookie(nonce))
+                .with(htmlLens of EditGroupViewModel(
+                    groupId = group.id.value,
+                    groupName = group.name,
+                    members = members,
+                    csrfToken = nonce,
+                ))
+        },
+
+        "/group/{id}/edit" bind POST to { request ->
+            val currentUserId = request.sessionUserId(sessionToken)
+                ?: return@to Response(Status.FOUND).header("Location", "/login")
+            val idParam = request.path("id")?.toLongOrNull()
+                ?: return@to Response(Status.NOT_FOUND)
+
+            val params = parseFormBody(request.bodyString())
+            val name = params["name"]?.firstOrNull()?.trim() ?: ""
+
+            groupService.editGroup(GroupId(idParam), name, currentUserId).fold(
+                onSuccess = {
+                    Response(Status.FOUND)
+                        .header("Location", "/group/$idParam")
+                        .cookie(flashCookie("Group updated successfully"))
+                },
+                onFailure = { error ->
+                    Response(Status.FOUND)
+                        .header("Location", "/group/$idParam")
+                        .cookie(flashCookie(error.message ?: "Could not update group"))
+                },
+            )
+        },
+
+        "/group/{id}/add_member" bind POST to { request ->
+            val currentUserId = request.sessionUserId(sessionToken)
+                ?: return@to Response(Status.FOUND).header("Location", "/login")
+            val idParam = request.path("id")?.toLongOrNull()
+                ?: return@to Response(Status.NOT_FOUND)
+
+            val params = parseFormBody(request.bodyString())
+            val username = params["username"]?.firstOrNull()?.trim() ?: ""
+
+            groupService.addMember(GroupId(idParam), username, currentUserId).fold(
+                onSuccess = {
+                    Response(Status.FOUND)
+                        .header("Location", "/group/$idParam")
+                        .cookie(flashCookie("Member added successfully"))
+                },
+                onFailure = { error ->
+                    Response(Status.FOUND)
+                        .header("Location", "/group/$idParam")
+                        .cookie(flashCookie(error.message ?: "Could not add member"))
+                },
+            )
+        },
+
+        "/group/{id}/remove_member/{userId}" bind POST to { request ->
+            val currentUserId = request.sessionUserId(sessionToken)
+                ?: return@to Response(Status.FOUND).header("Location", "/login")
+            val idParam = request.path("id")?.toLongOrNull()
+                ?: return@to Response(Status.NOT_FOUND)
+            val targetUserId = request.path("userId")?.toLongOrNull()
+                ?: return@to Response(Status.NOT_FOUND)
+
+            groupService.removeMember(GroupId(idParam), UserId(targetUserId), currentUserId).fold(
+                onSuccess = {
+                    Response(Status.FOUND)
+                        .header("Location", "/group/$idParam")
+                        .cookie(flashCookie("Member removed successfully"))
+                },
+                onFailure = { error ->
+                    Response(Status.FOUND)
+                        .header("Location", "/group/$idParam")
+                        .cookie(flashCookie(error.message ?: "Could not remove member"))
+                },
+            )
         },
 
         "/group/{id}" bind GET to { request ->

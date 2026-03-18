@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit Group — Splitwise</title>
+</head>
+<body>
+    <nav>
+        <a href="/">Home</a> |
+        <a href="/group/{{groupId}}">Back to Group</a> |
+        <form method="post" action="/logout" style="display:inline">
+            <input type="hidden" name="_csrf" value="{{csrfToken}}">
+            <button type="submit">Logout</button>
+        </form>
+    </nav>
+
+    <h1>Edit Group</h1>
+
+    {{#if errors}}
+    <ul>
+        {{#each errors}}
+        <li>{{this}}</li>
+        {{/each}}
+    </ul>
+    {{/if}}
+
+    <form method="post" action="/group/{{groupId}}/edit">
+        <input type="hidden" name="_csrf" value="{{csrfToken}}">
+        <label>Group Name<br>
+            <input type="text" name="name" value="{{groupName}}" required>
+        </label><br>
+        <button type="submit">Save Changes</button>
+    </form>
+
+    <hr>
+
+    <h2>Members</h2>
+    <ul>
+        {{#each members}}
+        <li>
+            {{username}}
+            <form method="post" action="/group/{{../groupId}}/remove_member/{{id}}" style="display:inline">
+                <input type="hidden" name="_csrf" value="{{../csrfToken}}">
+                <button type="submit">Remove</button>
+            </form>
+        </li>
+        {{/each}}
+    </ul>
+
+    <h2>Add Member</h2>
+    <form method="post" action="/group/{{groupId}}/add_member">
+        <input type="hidden" name="_csrf" value="{{csrfToken}}">
+        <label>Username<br>
+            <input type="text" name="username" required>
+        </label><br>
+        <button type="submit">Add Member</button>
+    </form>
+</body>
+</html>

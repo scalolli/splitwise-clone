@@ -13,6 +13,7 @@ import org.jetbrains.exposed.sql.innerJoin
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.sql.update
 
 class GroupRepository(private val database: Database) {
 
@@ -130,6 +131,14 @@ class GroupRepository(private val database: Database) {
             GroupMembersTable.deleteWhere {
                 (GroupMembersTable.groupId eq groupId.value) and
                     (GroupMembersTable.userId eq userId.value)
+            }
+        }
+    }
+
+    fun update(id: GroupId, name: String) {
+        transaction(database.exposed) {
+            GroupsTable.update({ GroupsTable.id eq id.value }) {
+                it[GroupsTable.name] = name
             }
         }
     }
