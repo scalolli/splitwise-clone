@@ -1,5 +1,6 @@
 package com.splitwise.web
 
+import com.splitwise.domain.ExpenseId
 import com.splitwise.domain.ExpenseShare
 import com.splitwise.domain.GroupId
 import com.splitwise.domain.Money
@@ -36,6 +37,19 @@ data class AddExpenseViewModel(
     val csrfToken: String = "",
 ) : ViewModel {
     override fun template() = "add_expense"
+}
+
+data class EditExpenseViewModel(
+    val expenseId: Long,
+    val groupId: Long,
+    val members: List<Map<String, Any?>>,
+    val errors: List<String> = emptyList(),
+    val description: String = "",
+    val amount: String = "",
+    val selectedPayerId: Long = 0,
+    val csrfToken: String = "",
+) : ViewModel {
+    override fun template() = "edit_expense"
 }
 
 fun expenseHandler(
@@ -150,6 +164,131 @@ fun expenseHandler(
                         ))
                 }
             )
+        },
+
+        "/expenses/{id}/edit" bind GET to { request ->
+            val currentUserId = request.sessionUserId(sessionToken)
+                ?: return@to Response(Status.FOUND).header("Location", "/login")
+            val expenseIdParam = request.path("id")?.toLongOrNull()
+                ?: return@to Response(Status.NOT_FOUND)
+
+            val expense = expenseRepository.findById(ExpenseId(expenseIdParam))
+                ?: return@to Response(Status.NOT_FOUND)
+
+            val group = groupRepository.findById(expense.groupId)
+                ?: return@to Response(Status.NOT_FOUND)
+
+            val isAuthorised = currentUserId == expense.payerId || currentUserId == group.creatorId
+            if (!isAuthorised) return@to Response(Status.FORBIDDEN)
+
+            val members = group.memberIds.mapNotNull { uid ->
+                val user = userRepository.findById(uid) ?: return@mapNotNull null
+                mapOf("id" to uid.value, "username" to user.username)
+            }
+
+            val nonce = CsrfToken.generate()
+            Response(Status.OK)
+                .cookie(csrfCookie(nonce))
+                .with(htmlLens of EditExpenseViewModel(
+                    expenseId = expenseIdParam,
+                    groupId = group.id.value,
+                    members = members,
+                    description = expense.description,
+                    amount = expense.amount.value.toPlainString(),
+                    selectedPayerId = expense.payerId.value,
+                    csrfToken = nonce,
+                ))
+        },
+
+        "/expenses/{id}/edit" bind POST to { request ->
+            val currentUserId = request.sessionUserId(sessionToken)
+                ?: return@to Response(Status.FOUND).header("Location", "/login")
+            val expenseIdParam = request.path("id")?.toLongOrNull()
+                ?: return@to Response(Status.NOT_FOUND)
+
+            val expense = expenseRepository.findById(ExpenseId(expenseIdParam))
+                ?: return@to Response(Status.NOT_FOUND)
+
+            val group = groupRepository.findById(expense.groupId)
+                ?: return@to Response(Status.NOT_FOUND)
+
+            val isAuthorised = currentUserId == expense.payerId || currentUserId == group.creatorId
+            if (!isAuthorised) return@to Response(Status.FORBIDDEN)
+
+            val params = parseFormBody(request.bodyString())
+            val description = params["description"]?.firstOrNull()?.trim() ?: ""
+            val amountRaw = params["amount"]?.firstOrNull()?.trim() ?: "0"
+            val payerIdRaw = params["payer_id"]?.firstOrNull()?.trim() ?: ""
+            val splitUserIds = params["split_user_id"] ?: emptyList()
+            val splitAmounts = params["split_amount"] ?: emptyList()
+
+            val amount = runCatching { Money(amountRaw) }.getOrElse { Money("0.00") }
+            val payerId = payerIdRaw.toLongOrNull()?.let { UserId(it) } ?: UserId(0)
+            val splits = splitUserIds.zip(splitAmounts).mapNotNull { (uid, amt) ->
+                val userId = uid.toLongOrNull() ?: return@mapNotNull null
+                val shareAmount = runCatching { Money(amt) }.getOrNull() ?: return@mapNotNull null
+                ExpenseShare(UserId(userId), shareAmount)
+            }
+
+            val members = group.memberIds.mapNotNull { uid ->
+                val user = userRepository.findById(uid) ?: return@mapNotNull null
+                mapOf("id" to uid.value, "username" to user.username)
+            }
+
+            val result = expenseService.editExpense(
+                id = ExpenseId(expenseIdParam),
+                description = description,
+                amount = amount,
+                payerId = payerId,
+                splits = splits,
+                memberIds = group.memberIds,
+            )
+
+            result.fold(
+                onSuccess = {
+                    Response(Status.FOUND)
+                        .header("Location", "/group/${group.id.value}")
+                        .cookie(flashCookie("Expense updated successfully"))
+                },
+                onFailure = { ex ->
+                    val errors = if (ex is ValidationException) ex.errors else listOf(ex.message ?: "Unexpected error")
+                    val nonce = CsrfToken.generate()
+                    Response(Status.BAD_REQUEST)
+                        .cookie(csrfCookie(nonce))
+                        .with(htmlLens of EditExpenseViewModel(
+                            expenseId = expenseIdParam,
+                            groupId = group.id.value,
+                            members = members,
+                            errors = errors,
+                            description = description,
+                            amount = amountRaw,
+                            selectedPayerId = payerId.value,
+                            csrfToken = nonce,
+                        ))
+                }
+            )
+        },
+
+        "/expenses/{id}/delete" bind POST to { request ->
+            val currentUserId = request.sessionUserId(sessionToken)
+                ?: return@to Response(Status.FOUND).header("Location", "/login")
+            val expenseIdParam = request.path("id")?.toLongOrNull()
+                ?: return@to Response(Status.NOT_FOUND)
+
+            val expense = expenseRepository.findById(ExpenseId(expenseIdParam))
+                ?: return@to Response(Status.NOT_FOUND)
+
+            val group = groupRepository.findById(expense.groupId)
+                ?: return@to Response(Status.NOT_FOUND)
+
+            val isAuthorised = currentUserId == expense.payerId || currentUserId == group.creatorId
+            if (!isAuthorised) return@to Response(Status.FORBIDDEN)
+
+            expenseService.deleteExpense(ExpenseId(expenseIdParam))
+
+            Response(Status.FOUND)
+                .header("Location", "/group/${group.id.value}")
+                .cookie(flashCookie("Expense deleted"))
         },
     )
 }

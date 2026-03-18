@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit Expense — Splitwise</title>
+</head>
+<body>
+    <nav>
+        <a href="/">Home</a> |
+        <a href="/group/{{groupId}}">Back to group</a> |
+        <form method="post" action="/logout" style="display:inline">
+            <input type="hidden" name="_csrf" value="{{csrfToken}}">
+            <button type="submit">Logout</button>
+        </form>
+    </nav>
+
+    <h1>Edit Expense</h1>
+
+    {{#if errors}}
+    <ul>
+        {{#each errors}}
+        <li>{{this}}</li>
+        {{/each}}
+    </ul>
+    {{/if}}
+
+    <form method="post" action="/expenses/{{expenseId}}/edit">
+        <input type="hidden" name="_csrf" value="{{csrfToken}}">
+
+        <label>Description<br>
+            <input type="text" name="description" value="{{description}}" required>
+        </label><br>
+
+        <label>Amount<br>
+            <input type="text" name="amount" value="{{amount}}" required>
+        </label><br>
+
+        <label>Paid by<br>
+            <select name="payer_id">
+                {{#each members}}
+                <option value="{{id}}">{{username}}</option>
+                {{/each}}
+            </select>
+        </label><br>
+
+        <h3>Splits</h3>
+        {{#each members}}
+        <div>
+            <input type="hidden" name="split_user_id" value="{{id}}">
+            <label>{{username}}: <input type="text" name="split_amount" value="0.00"></label>
+        </div>
+        {{/each}}
+
+        <br>
+        <button type="submit">Save Changes</button>
+    </form>
+
+    <hr>
+
+    <form method="post" action="/expenses/{{expenseId}}/delete" onsubmit="return confirm('Delete this expense?')">
+        <input type="hidden" name="_csrf" value="{{csrfToken}}">
+        <button type="submit">Delete Expense</button>
+    </form>
+</body>
+</html>

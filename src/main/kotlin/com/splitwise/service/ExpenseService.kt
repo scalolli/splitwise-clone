@@ -1,6 +1,7 @@
 package com.splitwise.service
 
 import com.splitwise.domain.Expense
+import com.splitwise.domain.ExpenseId
 import com.splitwise.domain.ExpenseShare
 import com.splitwise.domain.ExpenseValidator
 import com.splitwise.domain.GroupId
@@ -43,6 +44,40 @@ class ExpenseService(private val expenseRepository: ExpenseRepository) {
             shares = splits,
         )
         return Result.success(expense)
+    }
+
+    fun editExpense(
+        id: ExpenseId,
+        description: String,
+        amount: Money,
+        payerId: UserId,
+        splits: List<ExpenseShare>,
+        memberIds: List<UserId>,
+    ): Result<Unit> {
+        val validation = ExpenseValidator.validate(
+            description = description,
+            amount = amount,
+            payerId = payerId,
+            splits = splits,
+            memberIds = memberIds,
+        )
+
+        if (validation is ValidationResult.Invalid) {
+            return Result.failure(ValidationException(validation.errors))
+        }
+
+        expenseRepository.update(
+            id = id,
+            description = description,
+            amount = amount,
+            payerId = payerId,
+            shares = splits,
+        )
+        return Result.success(Unit)
+    }
+
+    fun deleteExpense(id: ExpenseId) {
+        expenseRepository.delete(id)
     }
 }
 
