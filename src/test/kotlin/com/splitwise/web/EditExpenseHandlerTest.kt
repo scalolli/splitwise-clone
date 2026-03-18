@@ -256,4 +256,35 @@ class EditExpenseHandlerTest {
 
         assertEquals(404, response.status.code)
     }
+
+    // --- Navigation / affordances ---
+
+    @Test
+    fun `GET edit expense contains back to group link`() {
+        val response = app(Request(GET, "/expenses/${expenseId.value}/edit").cookie("session", payerSession))
+
+        assertEquals(200, response.status.code)
+        assertTrue(response.bodyString().contains("""href="/group/${groupId.value}""""),
+            "Expected back-to-group link on edit expense page")
+    }
+
+    @Test
+    fun `GET edit expense contains delete button`() {
+        val response = app(Request(GET, "/expenses/${expenseId.value}/edit").cookie("session", payerSession))
+
+        assertEquals(200, response.status.code)
+        assertTrue(response.bodyString().contains("""action="/expenses/${expenseId.value}/delete""""),
+            "Expected delete form action on edit expense page")
+    }
+
+    @Test
+    fun `GET edit expense pre-populates existing split amounts`() {
+        val alice = userRepository.findByUsername("alice")!!
+        val response = app(Request(GET, "/expenses/${expenseId.value}/edit").cookie("session", payerSession))
+
+        assertEquals(200, response.status.code)
+        // The expense was created with alice owning 60.00 — that should appear in the form
+        assertTrue(response.bodyString().contains("60.00"),
+            "Expected existing split amount 60.00 to be pre-populated in edit form")
+    }
 }

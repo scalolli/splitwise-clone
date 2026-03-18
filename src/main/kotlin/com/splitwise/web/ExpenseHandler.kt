@@ -183,7 +183,8 @@ fun expenseHandler(
 
             val members = group.memberIds.mapNotNull { uid ->
                 val user = userRepository.findById(uid) ?: return@mapNotNull null
-                mapOf("id" to uid.value, "username" to user.username)
+                val shareAmount = expense.shares.find { it.userId == uid }?.amount?.value?.toPlainString() ?: "0.00"
+                mapOf("id" to uid.value, "username" to user.username, "shareAmount" to shareAmount)
             }
 
             val nonce = CsrfToken.generate()
