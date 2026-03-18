@@ -286,4 +286,15 @@ class EditGroupHandlerTest {
             "Expected permission error flash, got: ${flash.value}"
         )
     }
+
+    // --- Navigation ---
+
+    @Test
+    fun `GET edit group contains back to group link`() {
+        val response = app(Request(GET, "/group/${groupId.value}/edit").cookie("session", creatorSession))
+
+        assertEquals(200, response.status.code)
+        assertTrue(response.bodyString().contains("""href="/group/${groupId.value}""""),
+            "Expected back-to-group link on edit group page")
+    }
 }

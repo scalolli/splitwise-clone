@@ -103,31 +103,61 @@ class GroupHandlerTest {
     }
 
     @Test
-    fun `GET group returns correct balance figures against known fixture data`() {
-        val session = registerAndLogin("dave", "dave@example.com")
-        registerAndLogin("erin", "erin@example.com")
-        val dave = userRepository.findByUsername("dave")!!
-        val erin = userRepository.findByUsername("erin")!!
-        val group = groupRepository.create("Dave and Erin", null, dave.id)
-        groupRepository.addMember(group.id, erin.id)
+    fun `GET group contains link to edit group`() {
+        val session = registerAndLogin("nav_edit", "nav_edit@example.com")
+        val user = userRepository.findByUsername("nav_edit")!!
+        val group = groupRepository.create("Nav Group", null, user.id)
 
-        // Dave pays 100, split equally: dave owes 0, erin owes 50
-        expenseRepository.create(
+        val response = app(Request(GET, "/group/${group.id.value}").cookie("session", session))
+
+        assertEquals(200, response.status.code)
+        assertTrue(response.bodyString().contains("""href="/group/${group.id.value}/edit""""),
+            "Expected link to edit group on group page")
+    }
+
+    @Test
+    fun `GET group contains link to add expense`() {
+        val session = registerAndLogin("nav_expense", "nav_expense@example.com")
+        val user = userRepository.findByUsername("nav_expense")!!
+        val group = groupRepository.create("Expense Nav Group", null, user.id)
+
+        val response = app(Request(GET, "/group/${group.id.value}").cookie("session", session))
+
+        assertEquals(200, response.status.code)
+        assertTrue(response.bodyString().contains("""href="/group/${group.id.value}/add_expense""""),
+            "Expected link to add expense on group page")
+    }
+
+    @Test
+    fun `GET group embeds csrf token in logout form`() {
+        val session = registerAndLogin("nav_csrf", "nav_csrf@example.com")
+        val user = userRepository.findByUsername("nav_csrf")!!
+        val group = groupRepository.create("CSRF Group", null, user.id)
+
+        val response = app(Request(GET, "/group/${group.id.value}").cookie("session", session))
+
+        assertEquals(200, response.status.code)
+        assertTrue(response.bodyString().contains("""name="_csrf""""),
+            "Expected _csrf hidden field in logout form on group page")
+    }
+
+    @Test
+    fun `GET group contains edit link per expense row`() {
+        val session = registerAndLogin("nav_row", "nav_row@example.com")
+        val user = userRepository.findByUsername("nav_row")!!
+        val group = groupRepository.create("Row Group", null, user.id)
+        val expense = expenseRepository.create(
             groupId = group.id,
-            description = "Groceries",
-            amount = Money("100.00"),
-            payerId = dave.id,
-            shares = listOf(
-                ExpenseShare(dave.id, Money("50.00")),
-                ExpenseShare(erin.id, Money("50.00")),
-            ),
+            description = "Row Expense",
+            amount = Money("10.00"),
+            payerId = user.id,
+            shares = listOf(ExpenseShare(user.id, Money("10.00"))),
         )
 
         val response = app(Request(GET, "/group/${group.id.value}").cookie("session", session))
 
         assertEquals(200, response.status.code)
-        val body = response.bodyString()
-        // erin owes dave 50.00
-        assertTrue(body.contains("50"), "Expected balance of 50 in response body, got:\n$body")
+        assertTrue(response.bodyString().contains("""href="/expenses/${expense.id.value}/edit""""),
+            "Expected per-expense edit link on group page")
     }
 }

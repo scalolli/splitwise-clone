@@ -347,4 +347,16 @@ class AddExpenseHandlerTest {
         assertEquals(400, response.status.code)
         assertTrue(response.bodyString().contains("The sum of all splits must equal the total amount"))
     }
+
+    @Test
+    fun `GET add expense contains back to group link`() {
+        val response = app(
+            Request(GET, "/group/${groupId.value}/add_expense")
+                .cookie("session", aliceSession)
+        )
+
+        assertEquals(200, response.status.code)
+        assertTrue(response.bodyString().contains("""href="/group/${groupId.value}""""),
+            "Expected back-to-group link on add expense page")
+    }
 }

@@ -7,7 +7,10 @@
 <body>
     <nav>
         <a href="/">Home</a> |
+        <a href="/group/{{groupId}}/edit">Edit Group</a> |
+        <a href="/group/{{groupId}}/add_expense">Add Expense</a> |
         <form method="post" action="/logout" style="display:inline">
+            <input type="hidden" name="_csrf" value="{{csrfToken}}">
             <button type="submit">Logout</button>
         </form>
     </nav>
@@ -29,7 +32,7 @@
     {{#if expenses}}
     <table>
         <thead>
-            <tr><th>Description</th><th>Amount</th><th>Paid by</th></tr>
+            <tr><th>Description</th><th>Amount</th><th>Paid by</th><th></th></tr>
         </thead>
         <tbody>
             {{#each expenses}}
@@ -37,6 +40,7 @@
                 <td>{{description}}</td>
                 <td>{{amount}}</td>
                 <td>{{payer}}</td>
+                <td><a href="/expenses/{{id}}/edit">Edit</a></td>
             </tr>
             {{/each}}
         </tbody>

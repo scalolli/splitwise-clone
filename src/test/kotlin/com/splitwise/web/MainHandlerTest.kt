@@ -111,4 +111,13 @@ class MainHandlerTest {
         assertEquals(302, response.status.code)
         assertEquals("/login", response.header("Location"))
     }
+
+    @Test
+    fun `GET home contains link to create a new group`() {
+        val session = loginSession("nav_home", "nav_home@example.com")
+        val response = app(Request(GET, "/").cookie("session", session))
+        assertEquals(200, response.status.code)
+        assertTrue(response.bodyString().contains("""href="/group/create""""),
+            "Expected link to /group/create on home page")
+    }
 }
