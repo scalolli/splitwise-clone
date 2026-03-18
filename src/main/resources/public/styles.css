@@ -1,0 +1,274 @@
+/* ============================================================
+   Splitwise Clone — minimal stylesheet
+   Targets semantic HTML directly; no utility classes needed.
+   ============================================================ */
+
+/* --- Reset & base ----------------------------------------- */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+    font-size: 16px;
+    -webkit-text-size-adjust: 100%;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                 Helvetica, Arial, sans-serif;
+    font-size: 1rem;
+    line-height: 1.6;
+    color: #1a1a1a;
+    background: #f5f5f5;
+    min-height: 100vh;
+}
+
+/* --- Layout ----------------------------------------------- */
+body > nav,
+body > main,
+body > form,
+body > h1,
+body > h2,
+body > p,
+body > ul,
+body > table {
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+/* --- Navigation ------------------------------------------- */
+nav {
+    background: #fff;
+    border-bottom: 1px solid #e0e0e0;
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    max-width: 100%;
+}
+
+nav a {
+    color: #2e7d32;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+nav a:hover { text-decoration: underline; }
+
+nav form { margin: 0; }
+
+nav button[type="submit"] {
+    background: none;
+    border: none;
+    color: #757575;
+    cursor: pointer;
+    font-size: 0.9rem;
+    padding: 0;
+    font-family: inherit;
+}
+
+nav button[type="submit"]:hover { color: #1a1a1a; }
+
+/* --- Page wrapper ----------------------------------------- */
+.page {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+/* Fallback: direct body children get breathing room */
+body > h1 { margin: 2rem auto 0.5rem; padding: 0 1rem; }
+body > h2 { margin: 1.5rem auto 0.5rem; padding: 0 1rem; }
+body > p  { margin: 0.5rem auto; padding: 0 1rem; }
+
+/* --- Typography ------------------------------------------- */
+h1 { font-size: 1.75rem; font-weight: 700; color: #1a1a1a; }
+h2 { font-size: 1.2rem;  font-weight: 600; color: #333; margin-top: 2rem; }
+h3 { font-size: 1rem;    font-weight: 600; }
+
+a { color: #2e7d32; }
+
+/* --- Cards (main content sections) ----------------------- */
+.card {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.25rem;
+}
+
+/* --- Forms ------------------------------------------------ */
+form { margin-bottom: 1rem; }
+
+label {
+    display: block;
+    margin-bottom: 0.75rem;
+    font-size: 0.9rem;
+    color: #444;
+}
+
+label span { display: block; font-weight: 500; margin-bottom: 0.25rem; }
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+select,
+textarea {
+    display: block;
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.95rem;
+    font-family: inherit;
+    color: #1a1a1a;
+    background: #fff;
+    border: 1px solid #bdbdbd;
+    border-radius: 4px;
+    transition: border-color 0.15s;
+}
+
+input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: #2e7d32;
+    box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.15);
+}
+
+/* inline label + input on settle form */
+label input[type="text"],
+label select {
+    margin-top: 0.2rem;
+}
+
+/* --- Buttons --------------------------------------------- */
+button[type="submit"],
+input[type="submit"] {
+    display: inline-block;
+    padding: 0.5rem 1.25rem;
+    font-size: 0.95rem;
+    font-family: inherit;
+    font-weight: 500;
+    color: #fff;
+    background: #2e7d32;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.15s;
+    margin-top: 0.5rem;
+}
+
+button[type="submit"]:hover,
+input[type="submit"]:hover { background: #1b5e20; }
+
+/* destructive actions (delete) */
+button.destructive,
+button[name="action"][value="delete"] {
+    background: #c62828;
+}
+button.destructive:hover { background: #b71c1c; }
+
+/* --- Tables ---------------------------------------------- */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.92rem;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+}
+
+thead { background: #f9f9f9; }
+
+th {
+    text-align: left;
+    padding: 0.6rem 0.9rem;
+    font-weight: 600;
+    color: #555;
+    border-bottom: 1px solid #e0e0e0;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+td {
+    padding: 0.6rem 0.9rem;
+    border-bottom: 1px solid #f0f0f0;
+    color: #1a1a1a;
+}
+
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: #fafafa; }
+
+td a { font-size: 0.85rem; }
+
+/* --- Lists ----------------------------------------------- */
+ul { list-style: none; padding: 0; }
+
+ul li {
+    padding: 0.4rem 0;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 0.95rem;
+}
+
+ul li:last-child { border-bottom: none; }
+
+/* group list on home page */
+ul.group-list li a {
+    font-weight: 500;
+    font-size: 1rem;
+}
+
+/* --- Flash messages -------------------------------------- */
+.flash {
+    background: #e8f5e9;
+    border: 1px solid #a5d6a7;
+    border-left: 4px solid #2e7d32;
+    color: #1b5e20;
+    padding: 0.6rem 1rem;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+}
+
+/* --- Inline validation errors ---------------------------- */
+ul.errors,
+.errors {
+    background: #ffebee;
+    border: 1px solid #ef9a9a;
+    border-left: 4px solid #c62828;
+    border-radius: 4px;
+    padding: 0.6rem 1rem;
+    margin-bottom: 1rem;
+    color: #b71c1c;
+    font-size: 0.9rem;
+}
+
+ul.errors li { border: none; padding: 0.1rem 0; }
+
+/* --- Balance list ---------------------------------------- */
+ul.balances li { font-size: 0.95rem; color: #444; }
+
+/* --- Settlement history ---------------------------------- */
+ul.settlements li { font-size: 0.9rem; color: #555; }
+
+/* --- Auth pages (centered narrow form) ------------------- */
+.auth-page {
+    max-width: 420px;
+    margin: 3rem auto;
+    padding: 0 1rem;
+}
+
+.auth-page h1 { margin-bottom: 1.5rem; }
+
+/* --- Utility --------------------------------------------- */
+.mt-1 { margin-top: 0.5rem; }
+.mt-2 { margin-top: 1rem; }
+.muted { color: #757575; font-size: 0.9rem; }

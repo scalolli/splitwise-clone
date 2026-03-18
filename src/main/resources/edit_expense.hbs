@@ -2,64 +2,66 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Edit Expense — Splitwise</title>
+    <link rel="stylesheet" href="/public/styles.css">
 </head>
 <body>
     <nav>
-        <a href="/">Home</a> |
-        <a href="/group/{{groupId}}">Back to group</a> |
+        <a href="/">Splitwise</a>
+        <a href="/group/{{groupId}}">Back to Group</a>
         <form method="post" action="/logout" style="display:inline">
             <input type="hidden" name="_csrf" value="{{csrfToken}}">
             <button type="submit">Logout</button>
         </form>
     </nav>
 
-    <h1>Edit Expense</h1>
+    <div class="page">
+        <h1>Edit Expense</h1>
 
-    {{#if errors}}
-    <ul>
-        {{#each errors}}
-        <li>{{this}}</li>
-        {{/each}}
-    </ul>
-    {{/if}}
+        {{#if errors}}
+        <ul class="errors">
+            {{#each errors}}<li>{{this}}</li>{{/each}}
+        </ul>
+        {{/if}}
 
-    <form method="post" action="/expenses/{{expenseId}}/edit">
-        <input type="hidden" name="_csrf" value="{{csrfToken}}">
+        <form method="post" action="/expenses/{{expenseId}}/edit">
+            <input type="hidden" name="_csrf" value="{{csrfToken}}">
 
-        <label>Description<br>
-            <input type="text" name="description" value="{{description}}" required>
-        </label><br>
+            <label><span>Description</span>
+                <input type="text" name="description" value="{{description}}" required>
+            </label>
 
-        <label>Amount<br>
-            <input type="text" name="amount" value="{{amount}}" required>
-        </label><br>
+            <label><span>Amount</span>
+                <input type="text" name="amount" value="{{amount}}" required placeholder="0.00">
+            </label>
 
-        <label>Paid by<br>
-            <select name="payer_id">
-                {{#each members}}
-                <option value="{{id}}">{{username}}</option>
-                {{/each}}
-            </select>
-        </label><br>
+            <label><span>Paid by</span>
+                <select name="payer_id">
+                    {{#each members}}
+                    <option value="{{id}}">{{username}}</option>
+                    {{/each}}
+                </select>
+            </label>
 
-        <h3>Splits</h3>
-        {{#each members}}
-        <div>
-            <input type="hidden" name="split_user_id" value="{{id}}">
-            <label>{{username}}: <input type="text" name="split_amount" value="{{shareAmount}}"></label>
-        </div>
-        {{/each}}
+            <h3 style="margin-top: 1.25rem; margin-bottom: 0.5rem;">Splits</h3>
+            {{#each members}}
+            <label>
+                <span>{{username}}</span>
+                <input type="hidden" name="split_user_id" value="{{id}}">
+                <input type="text" name="split_amount" value="{{shareAmount}}" placeholder="0.00">
+            </label>
+            {{/each}}
 
-        <br>
-        <button type="submit">Save Changes</button>
-    </form>
+            <button type="submit">Save Changes</button>
+        </form>
 
-    <hr>
+        <hr style="margin: 2rem 0; border-color: #e0e0e0;">
 
-    <form method="post" action="/expenses/{{expenseId}}/delete" onsubmit="return confirm('Delete this expense?')">
-        <input type="hidden" name="_csrf" value="{{csrfToken}}">
-        <button type="submit">Delete Expense</button>
-    </form>
+        <form method="post" action="/expenses/{{expenseId}}/delete" onsubmit="return confirm('Delete this expense?')">
+            <input type="hidden" name="_csrf" value="{{csrfToken}}">
+            <button type="submit" class="destructive">Delete Expense</button>
+        </form>
+    </div>
 </body>
 </html>

@@ -2,23 +2,30 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Login - Splitwise</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Login — Splitwise</title>
+    <link rel="stylesheet" href="/public/styles.css">
 </head>
 <body>
-    <h1>Login</h1>
-    {{#if error}}
-    <p>{{error}}</p>
-    {{/if}}
-    <form method="post" action="/login">
-        <input type="hidden" name="_csrf" value="{{csrfToken}}">
-        <label>Username<br>
-            <input type="text" name="username" value="{{username}}">
-        </label><br>
-        <label>Password<br>
-            <input type="password" name="password">
-        </label><br>
-        <button type="submit">Login</button>
-    </form>
-    <p><a href="/register">No account? Register</a></p>
+    <div class="auth-page">
+        <h1>Login</h1>
+
+        {{#if error}}
+        <ul class="errors"><li>{{error}}</li></ul>
+        {{/if}}
+
+        <form method="post" action="/login">
+            <input type="hidden" name="_csrf" value="{{csrfToken}}">
+            <label><span>Username</span>
+                <input type="text" name="username" value="{{username}}" autocomplete="username">
+            </label>
+            <label><span>Password</span>
+                <input type="password" name="password" autocomplete="current-password">
+            </label>
+            <button type="submit">Login</button>
+        </form>
+
+        <p class="mt-2 muted"><a href="/register">No account? Register</a></p>
+    </div>
 </body>
 </html>

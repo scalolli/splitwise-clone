@@ -2,33 +2,36 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Create Group — Splitwise</title>
+    <link rel="stylesheet" href="/public/styles.css">
 </head>
 <body>
     <nav>
-        <a href="/">Home</a> |
+        <a href="/">Splitwise</a>
+        <a href="/">Home</a>
         <form method="post" action="/logout" style="display:inline">
             <input type="hidden" name="_csrf" value="{{csrfToken}}">
             <button type="submit">Logout</button>
         </form>
     </nav>
 
-    <h1>Create Group</h1>
+    <div class="page">
+        <h1>Create Group</h1>
 
-    {{#if errors}}
-    <ul>
-        {{#each errors}}
-        <li>{{this}}</li>
-        {{/each}}
-    </ul>
-    {{/if}}
+        {{#if errors}}
+        <ul class="errors">
+            {{#each errors}}<li>{{this}}</li>{{/each}}
+        </ul>
+        {{/if}}
 
-    <form method="post" action="/group/create">
-        <input type="hidden" name="_csrf" value="{{csrfToken}}">
-        <label>Group Name<br>
-            <input type="text" name="name" value="{{name}}" required>
-        </label><br>
-        <button type="submit">Create Group</button>
-    </form>
+        <form method="post" action="/group/create">
+            <input type="hidden" name="_csrf" value="{{csrfToken}}">
+            <label><span>Group Name</span>
+                <input type="text" name="name" value="{{name}}" required>
+            </label>
+            <button type="submit">Create Group</button>
+        </form>
+    </div>
 </body>
 </html>

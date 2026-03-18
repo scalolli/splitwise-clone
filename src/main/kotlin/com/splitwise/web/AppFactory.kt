@@ -8,8 +8,10 @@ import com.splitwise.service.UserService
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method.GET
 import org.http4k.core.then
+import org.http4k.routing.ResourceLoader
 import org.http4k.routing.bind
 import org.http4k.routing.routes
+import org.http4k.routing.static
 
 fun buildApp(
     userRepository: UserRepository,
@@ -24,6 +26,7 @@ fun buildApp(
 
     return routes(
         "/health" bind GET to healthHandler,
+        "/public" bind static(ResourceLoader.Classpath("public")),
         csrfFilter.then(
             routes(
                 authHandler(userService, sessionToken),

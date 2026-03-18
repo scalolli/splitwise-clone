@@ -2,87 +2,101 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{groupName}} — Splitwise</title>
+    <link rel="stylesheet" href="/public/styles.css">
 </head>
 <body>
     <nav>
-        <a href="/">Home</a> |
-        <a href="/group/{{groupId}}/edit">Edit Group</a> |
-        <a href="/group/{{groupId}}/add_expense">Add Expense</a> |
+        <a href="/">Splitwise</a>
+        <a href="/">Home</a>
+        <a href="/group/{{groupId}}/edit">Edit Group</a>
+        <a href="/group/{{groupId}}/add_expense">Add Expense</a>
         <form method="post" action="/logout" style="display:inline">
             <input type="hidden" name="_csrf" value="{{csrfToken}}">
             <button type="submit">Logout</button>
         </form>
     </nav>
 
-    <h1>{{groupName}}</h1>
+    <div class="page">
+        <h1>{{groupName}}</h1>
 
-    <h2>Members</h2>
-    {{#if members}}
-    <ul>
-        {{#each members}}
-        <li>{{username}}</li>
-        {{/each}}
-    </ul>
-    {{else}}
-    <p>No members.</p>
-    {{/if}}
+        <h2>Members</h2>
+        {{#if members}}
+        <ul>
+            {{#each members}}<li>{{username}}</li>{{/each}}
+        </ul>
+        {{else}}
+        <p class="muted">No members.</p>
+        {{/if}}
 
-    <h2>Expenses</h2>
-    {{#if expenses}}
-    <table>
-        <thead>
-            <tr><th>Description</th><th>Amount</th><th>Paid by</th><th></th></tr>
-        </thead>
-        <tbody>
-            {{#each expenses}}
-            <tr>
-                <td>{{description}}</td>
-                <td>{{amount}}</td>
-                <td>{{payer}}</td>
-                <td><a href="/expenses/{{id}}/edit">Edit</a></td>
-            </tr>
-            {{/each}}
-        </tbody>
-    </table>
-    {{else}}
-    <p>No expenses yet.</p>
-    {{/if}}
+        <h2>Expenses</h2>
+        {{#if expenses}}
+        <table>
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th>Amount</th>
+                    <th>Paid by</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#each expenses}}
+                <tr>
+                    <td>{{description}}</td>
+                    <td>{{amount}}</td>
+                    <td>{{payer}}</td>
+                    <td><a href="/expenses/{{id}}/edit">Edit</a></td>
+                </tr>
+                {{/each}}
+            </tbody>
+        </table>
+        {{else}}
+        <p class="muted">No expenses yet. <a href="/group/{{groupId}}/add_expense">Add one</a>.</p>
+        {{/if}}
 
-    <h2>Balances</h2>
-    {{#if balances}}
-    <ul>
-        {{#each balances}}<li>{{debtor}} owes {{creditor}} {{amount}}</li>{{/each}}
-    </ul>
-    {{else}}<p>All settled up!</p>{{/if}}
+        <h2>Balances</h2>
+        {{#if balances}}
+        <ul class="balances">
+            {{#each balances}}<li>{{debtor}} owes {{creditor}} {{amount}}</li>{{/each}}
+        </ul>
+        {{else}}
+        <p>All settled up!</p>
+        {{/if}}
 
-    <h2>Record Settlement</h2>
-    {{#if settlementErrors}}
-    <ul class="errors">
-        {{#each settlementErrors}}<li>{{this}}</li>{{/each}}
-    </ul>
-    {{/if}}
-    <form method="post" action="/group/{{groupId}}/settle">
-        <input type="hidden" name="_csrf" value="{{csrfToken}}">
-        <label>From:
-            <select name="from_user_id">
-                {{#each members}}<option value="{{id}}">{{username}}</option>{{/each}}
-            </select>
-        </label>
-        <label>To:
-            <select name="to_user_id">
-                {{#each members}}<option value="{{id}}">{{username}}</option>{{/each}}
-            </select>
-        </label>
-        <label>Amount: <input type="text" name="amount" placeholder="0.00"></label>
-        <button type="submit">Record Settlement</button>
-    </form>
+        <h2>Record Settlement</h2>
+        {{#if settlementErrors}}
+        <ul class="errors">
+            {{#each settlementErrors}}<li>{{this}}</li>{{/each}}
+        </ul>
+        {{/if}}
+        <form method="post" action="/group/{{groupId}}/settle">
+            <input type="hidden" name="_csrf" value="{{csrfToken}}">
+            <label><span>From</span>
+                <select name="from_user_id">
+                    {{#each members}}<option value="{{id}}">{{username}}</option>{{/each}}
+                </select>
+            </label>
+            <label><span>To</span>
+                <select name="to_user_id">
+                    {{#each members}}<option value="{{id}}">{{username}}</option>{{/each}}
+                </select>
+            </label>
+            <label><span>Amount</span>
+                <input type="text" name="amount" placeholder="0.00">
+            </label>
+            <button type="submit">Record Settlement</button>
+        </form>
 
-    <h2>Settlement History</h2>
-    {{#if settlements}}
-    <ul>
-        {{#each settlements}}<li>{{from}} paid {{to}} {{amount}}</li>{{/each}}
-    </ul>
-    {{else}}<p>No settlements yet.</p>{{/if}}
+        <h2>Settlement History</h2>
+        {{#if settlements}}
+        <ul class="settlements">
+            {{#each settlements}}<li>{{from}} paid {{to}} {{amount}}</li>{{/each}}
+        </ul>
+        {{else}}
+        <p class="muted">No settlements yet.</p>
+        {{/if}}
+    </div>
 </body>
 </html>
