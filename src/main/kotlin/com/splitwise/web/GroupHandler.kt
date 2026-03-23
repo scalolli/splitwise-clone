@@ -10,6 +10,8 @@ import com.splitwise.persistence.UserRepository
 import com.splitwise.service.BalanceService
 import com.splitwise.service.GroupService
 import com.splitwise.service.SettlementService
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
 import org.http4k.core.Body
 import org.http4k.core.ContentType
 import org.http4k.core.Method.GET
@@ -91,6 +93,7 @@ fun groupHandler(
     val balanceService = BalanceService(expenseRepository, settlementRepository)
     val groupService = GroupService(groupRepository, userRepository)
     val settlementService = SettlementService(settlementRepository, groupRepository)
+    val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE
 
     return routes(
         "/group/create" bind GET to { request ->
@@ -249,11 +252,13 @@ fun groupHandler(
 
             val expenses = expenseRepository.findByGroup(group.id).map { expense ->
                 val payerName = userMap[expense.payerId]?.username ?: expense.payerId.value.toString()
+                val incurredDate = expense.incurredAt.atZone(ZoneOffset.UTC).toLocalDate().format(dateFormatter)
                 mapOf(
                     "id" to expense.id.value,
                     "description" to expense.description,
                     "amount" to expense.amount.value.toPlainString(),
                     "payer" to payerName,
+                    "incurredAt" to incurredDate,
                 )
             }
 
@@ -316,8 +321,10 @@ fun groupHandler(
                 }
                 val expenses = expenseRepository.findByGroup(group.id).map { expense ->
                     val payerName = userMap[expense.payerId]?.username ?: expense.payerId.value.toString()
+                    val incurredDate = expense.incurredAt.atZone(ZoneOffset.UTC).toLocalDate().format(dateFormatter)
                     mapOf("id" to expense.id.value, "description" to expense.description,
-                          "amount" to expense.amount.value.toPlainString(), "payer" to payerName)
+                          "amount" to expense.amount.value.toPlainString(), "payer" to payerName,
+                          "incurredAt" to incurredDate)
                 }
                 val balances = balanceService.balancesForGroup(group.id).map { balance ->
                     val debtorName = userMap[balance.debtorId]?.username ?: balance.debtorId.value.toString()

@@ -349,14 +349,72 @@ class AddExpenseHandlerTest {
     }
 
     @Test
-    fun `GET add expense contains back to group link`() {
+    fun `GET add expense contains date input`() {
         val response = app(
             Request(GET, "/group/${groupId.value}/add_expense")
                 .cookie("session", aliceSession)
         )
 
         assertEquals(200, response.status.code)
-        assertTrue(response.bodyString().contains("""href="/group/${groupId.value}""""),
-            "Expected back-to-group link on add expense page")
+        assertTrue(response.bodyString().contains("""name="incurred_at""""),
+            "Expected date input on add expense page")
+    }
+
+    @Test
+    fun `POST add expense with explicit date saves that date`() {
+        val alice = userRepository.findByUsername("alice")!!
+        val (csrfCookieValue, csrfFormValue) = TestHelpers.getCsrfToken(
+            app, "/group/${groupId.value}/add_expense", aliceSession
+        )
+
+        app(
+            Request(POST, "/group/${groupId.value}/add_expense")
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .cookie("session", aliceSession)
+                .cookie(Cookie("csrf", csrfCookieValue))
+                .body(TestHelpers.formBody(
+                    "description" to "Old dinner",
+                    "amount" to "20.00",
+                    "payer_id" to alice.id.value.toString(),
+                    "split_user_id" to alice.id.value.toString(),
+                    "split_amount" to "20.00",
+                    "incurred_at" to "2024-06-15",
+                    "_csrf" to csrfFormValue,
+                ))
+        )
+
+        val expenses = expenseRepository.findByGroup(groupId)
+        assertEquals(1, expenses.size)
+        val savedDate = expenses[0].incurredAt.atZone(java.time.ZoneOffset.UTC).toLocalDate()
+        assertEquals(java.time.LocalDate.of(2024, 6, 15), savedDate)
+    }
+
+    @Test
+    fun `POST add expense without date defaults to today`() {
+        val alice = userRepository.findByUsername("alice")!!
+        val (csrfCookieValue, csrfFormValue) = TestHelpers.getCsrfToken(
+            app, "/group/${groupId.value}/add_expense", aliceSession
+        )
+
+        app(
+            Request(POST, "/group/${groupId.value}/add_expense")
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .cookie("session", aliceSession)
+                .cookie(Cookie("csrf", csrfCookieValue))
+                .body(TestHelpers.formBody(
+                    "description" to "Coffee",
+                    "amount" to "5.00",
+                    "payer_id" to alice.id.value.toString(),
+                    "split_user_id" to alice.id.value.toString(),
+                    "split_amount" to "5.00",
+                    "_csrf" to csrfFormValue,
+                ))
+        )
+
+        val expenses = expenseRepository.findByGroup(groupId)
+        assertEquals(1, expenses.size)
+        val today = java.time.LocalDate.now()
+        val savedDate = expenses[0].incurredAt.atZone(java.time.ZoneOffset.UTC).toLocalDate()
+        assertEquals(today, savedDate)
     }
 }

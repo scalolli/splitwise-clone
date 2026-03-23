@@ -6,7 +6,9 @@ import com.splitwise.domain.ExpenseShare
 import com.splitwise.domain.GroupId
 import com.splitwise.domain.Money
 import com.splitwise.domain.UserId
+import java.time.LocalDate
 import java.time.OffsetDateTime
+import java.time.ZoneOffset
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.batchInsert
@@ -24,15 +26,16 @@ class ExpenseRepository(private val database: Database) {
         amount: Money,
         payerId: UserId,
         shares: List<ExpenseShare>,
+        incurredAt: LocalDate = LocalDate.now(),
     ): Expense =
         transaction(database.exposed) {
-            val now = OffsetDateTime.now()
+            val incurredAtOffset = incurredAt.atStartOfDay().atOffset(ZoneOffset.UTC)
             val expenseId = ExpensesTable.insert {
                 it[ExpensesTable.groupId] = groupId.value
                 it[ExpensesTable.description] = description
                 it[ExpensesTable.amount] = amount.value
                 it[ExpensesTable.payerId] = payerId.value
-                it[ExpensesTable.incurredAt] = now
+                it[ExpensesTable.incurredAt] = incurredAtOffset
             } get ExpensesTable.id
 
             ExpenseSharesTable.batchInsert(shares) { share ->
@@ -48,7 +51,7 @@ class ExpenseRepository(private val database: Database) {
                 amount = amount,
                 payerId = payerId,
                 shares = shares,
-                incurredAt = now.toInstant(),
+                incurredAt = incurredAtOffset.toInstant(),
             )
         }
 
@@ -103,12 +106,15 @@ class ExpenseRepository(private val database: Database) {
         amount: Money,
         payerId: UserId,
         shares: List<ExpenseShare>,
+        incurredAt: LocalDate,
     ) {
         transaction(database.exposed) {
+            val incurredAtOffset = incurredAt.atStartOfDay().atOffset(ZoneOffset.UTC)
             ExpensesTable.update({ ExpensesTable.id eq id.value }) {
                 it[ExpensesTable.description] = description
                 it[ExpensesTable.amount] = amount.value
                 it[ExpensesTable.payerId] = payerId.value
+                it[ExpensesTable.incurredAt] = incurredAtOffset
             }
 
             ExpenseSharesTable.deleteWhere { ExpenseSharesTable.expenseId eq id.value }

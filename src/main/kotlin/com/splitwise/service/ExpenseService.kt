@@ -9,6 +9,7 @@ import com.splitwise.domain.Money
 import com.splitwise.domain.UserId
 import com.splitwise.domain.ValidationResult
 import com.splitwise.persistence.ExpenseRepository
+import java.time.LocalDate
 
 class ExpenseService(private val expenseRepository: ExpenseRepository) {
 
@@ -23,6 +24,7 @@ class ExpenseService(private val expenseRepository: ExpenseRepository) {
         payerId: UserId,
         splits: List<ExpenseShare>,
         memberIds: List<UserId>,
+        incurredAt: LocalDate = LocalDate.now(),
     ): Result<Expense> {
         val validation = ExpenseValidator.validate(
             description = description,
@@ -42,6 +44,7 @@ class ExpenseService(private val expenseRepository: ExpenseRepository) {
             amount = amount,
             payerId = payerId,
             shares = splits,
+            incurredAt = incurredAt,
         )
         return Result.success(expense)
     }
@@ -53,6 +56,7 @@ class ExpenseService(private val expenseRepository: ExpenseRepository) {
         payerId: UserId,
         splits: List<ExpenseShare>,
         memberIds: List<UserId>,
+        incurredAt: LocalDate = LocalDate.now(),
     ): Result<Unit> {
         val validation = ExpenseValidator.validate(
             description = description,
@@ -72,6 +76,7 @@ class ExpenseService(private val expenseRepository: ExpenseRepository) {
             amount = amount,
             payerId = payerId,
             shares = splits,
+            incurredAt = incurredAt,
         )
         return Result.success(Unit)
     }

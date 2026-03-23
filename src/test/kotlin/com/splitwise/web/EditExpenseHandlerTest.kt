@@ -9,6 +9,8 @@ import com.splitwise.persistence.GroupRepository
 import com.splitwise.persistence.PostgresTestSupport
 import com.splitwise.persistence.SettlementRepository
 import com.splitwise.persistence.UserRepository
+import java.time.LocalDate
+import java.time.ZoneOffset
 import org.http4k.core.Method.GET
 import org.http4k.core.Method.POST
 import org.http4k.core.Request
@@ -286,5 +288,42 @@ class EditExpenseHandlerTest {
         // The expense was created with alice owning 60.00 — that should appear in the form
         assertTrue(response.bodyString().contains("60.00"),
             "Expected existing split amount 60.00 to be pre-populated in edit form")
+    }
+
+    // --- Date field ---
+
+    @Test
+    fun `GET edit expense contains pre-populated date input`() {
+        val response = app(Request(GET, "/expenses/${expenseId.value}/edit").cookie("session", payerSession))
+
+        assertEquals(200, response.status.code)
+        assertTrue(response.bodyString().contains("""name="incurred_at""""),
+            "Expected date input on edit expense page")
+    }
+
+    @Test
+    fun `POST edit expense with new date updates stored date`() {
+        val alice = userRepository.findByUsername("alice")!!
+        val (csrfCookie, csrfForm) = TestHelpers.getCsrfToken(app, "/expenses/${expenseId.value}/edit", payerSession)
+
+        app(
+            Request(POST, "/expenses/${expenseId.value}/edit")
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .cookie("session", payerSession)
+                .cookie(Cookie("csrf", csrfCookie))
+                .body(TestHelpers.formBody(
+                    "description" to "Updated Expense",
+                    "amount" to "60.00",
+                    "payer_id" to alice.id.value.toString(),
+                    "split_user_id" to alice.id.value.toString(),
+                    "split_amount" to "60.00",
+                    "incurred_at" to "2023-03-10",
+                    "_csrf" to csrfForm,
+                ))
+        )
+
+        val updated = expenseRepository.findById(expenseId)!!
+        val savedDate = updated.incurredAt.atZone(ZoneOffset.UTC).toLocalDate()
+        assertEquals(LocalDate.of(2023, 3, 10), savedDate)
     }
 }

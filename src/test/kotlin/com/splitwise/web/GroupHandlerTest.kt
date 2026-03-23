@@ -160,4 +160,25 @@ class GroupHandlerTest {
         assertTrue(response.bodyString().contains("""href="/expenses/${expense.id.value}/edit""""),
             "Expected per-expense edit link on group page")
     }
+
+    @Test
+    fun `GET group expense table shows incurred date`() {
+        val session = registerAndLogin("date_user", "date_user@example.com")
+        val user = userRepository.findByUsername("date_user")!!
+        val group = groupRepository.create("Date Group", null, user.id)
+        expenseRepository.create(
+            groupId = group.id,
+            description = "Dated Expense",
+            amount = Money("15.00"),
+            payerId = user.id,
+            shares = listOf(ExpenseShare(user.id, Money("15.00"))),
+        )
+
+        val response = app(Request(GET, "/group/${group.id.value}").cookie("session", session))
+
+        assertEquals(200, response.status.code)
+        // The date column must appear in the table header
+        assertTrue(response.bodyString().contains("Date"),
+            "Expected 'Date' column header in expense table")
+    }
 }

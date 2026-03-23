@@ -4,6 +4,7 @@ import com.splitwise.domain.ExpenseShare
 import com.splitwise.domain.GroupId
 import com.splitwise.domain.Money
 import com.splitwise.domain.UserId
+import java.time.LocalDate
 import org.junit.jupiter.api.Test
 import java.math.BigDecimal
 import kotlin.test.assertEquals
@@ -89,6 +90,7 @@ class ExpenseRepositoryTest {
                 ExpenseShare(payer.id, Money("30.00")),
                 ExpenseShare(memberA.id, Money("30.00")),
             ),
+            incurredAt = LocalDate.now(),
         )
 
         val updated = expenseRepository.findById(original.id)!!

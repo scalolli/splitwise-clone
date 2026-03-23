@@ -10,6 +10,8 @@ import com.splitwise.persistence.GroupRepository
 import com.splitwise.persistence.UserRepository
 import com.splitwise.service.ExpenseService
 import com.splitwise.service.ValidationException
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import org.http4k.core.Body
 import org.http4k.core.ContentType
 import org.http4k.core.Method.GET
@@ -34,6 +36,7 @@ data class AddExpenseViewModel(
     val errors: List<String> = emptyList(),
     val description: String = "",
     val amount: String = "",
+    val incurredAt: String = "",
     val csrfToken: String = "",
 ) : ViewModel {
     override fun template() = "add_expense"
@@ -46,6 +49,7 @@ data class EditExpenseViewModel(
     val errors: List<String> = emptyList(),
     val description: String = "",
     val amount: String = "",
+    val incurredAt: String = "",
     val selectedPayerId: Long = 0,
     val csrfToken: String = "",
 ) : ViewModel {
@@ -61,6 +65,7 @@ fun expenseHandler(
     val renderer = HandlebarsTemplates().CachingClasspath()
     val htmlLens = Body.viewModel(renderer, ContentType.TEXT_HTML).toLens()
     val expenseService = ExpenseService(expenseRepository)
+    val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE  // YYYY-MM-DD
 
     fun csrfCookie(nonce: String) = Cookie(
         name = "csrf", value = nonce, maxAge = 3600, path = "/",
@@ -97,6 +102,7 @@ fun expenseHandler(
                 .with(htmlLens of AddExpenseViewModel(
                     groupId = idParam,
                     members = members,
+                    incurredAt = LocalDate.now().format(dateFormatter),
                     csrfToken = nonce,
                 ))
         },
@@ -120,6 +126,9 @@ fun expenseHandler(
             val payerIdRaw = params["payer_id"]?.firstOrNull()?.trim() ?: ""
             val splitUserIds = params["split_user_id"] ?: emptyList()
             val splitAmounts = params["split_amount"] ?: emptyList()
+            val incurredAtRaw = params["incurred_at"]?.firstOrNull()?.trim() ?: ""
+            val incurredAt = runCatching { LocalDate.parse(incurredAtRaw, dateFormatter) }
+                .getOrElse { LocalDate.now() }
 
             val amount = runCatching { Money(amountRaw) }.getOrElse { Money("0.00") }
             val payerId = payerIdRaw.toLongOrNull()?.let { UserId(it) } ?: UserId(0)
@@ -141,6 +150,7 @@ fun expenseHandler(
                 payerId = payerId,
                 splits = splits,
                 memberIds = group.memberIds,
+                incurredAt = incurredAt,
             )
 
             result.fold(
@@ -160,6 +170,7 @@ fun expenseHandler(
                             errors = errors,
                             description = description,
                             amount = amountRaw,
+                            incurredAt = incurredAtRaw,
                             csrfToken = nonce,
                         ))
                 }
@@ -196,6 +207,7 @@ fun expenseHandler(
                     members = members,
                     description = expense.description,
                     amount = expense.amount.value.toPlainString(),
+                    incurredAt = expense.incurredAt.atZone(java.time.ZoneOffset.UTC).toLocalDate().format(dateFormatter),
                     selectedPayerId = expense.payerId.value,
                     csrfToken = nonce,
                 ))
@@ -222,6 +234,9 @@ fun expenseHandler(
             val payerIdRaw = params["payer_id"]?.firstOrNull()?.trim() ?: ""
             val splitUserIds = params["split_user_id"] ?: emptyList()
             val splitAmounts = params["split_amount"] ?: emptyList()
+            val incurredAtRaw = params["incurred_at"]?.firstOrNull()?.trim() ?: ""
+            val incurredAt = runCatching { LocalDate.parse(incurredAtRaw, dateFormatter) }
+                .getOrElse { LocalDate.now() }
 
             val amount = runCatching { Money(amountRaw) }.getOrElse { Money("0.00") }
             val payerId = payerIdRaw.toLongOrNull()?.let { UserId(it) } ?: UserId(0)
@@ -243,6 +258,7 @@ fun expenseHandler(
                 payerId = payerId,
                 splits = splits,
                 memberIds = group.memberIds,
+                incurredAt = incurredAt,
             )
 
             result.fold(
@@ -263,6 +279,7 @@ fun expenseHandler(
                             errors = errors,
                             description = description,
                             amount = amountRaw,
+                            incurredAt = incurredAtRaw,
                             selectedPayerId = payerId.value,
                             csrfToken = nonce,
                         ))
