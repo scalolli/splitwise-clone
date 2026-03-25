@@ -27,8 +27,16 @@ object CsrfToken {
     }
 
     private fun extractFormField(request: Request, name: String): String? {
-        val body = request.bodyString()
-        return body.split("&")
+        val contentType = request.header("Content-Type") ?: ""
+        return if (contentType.contains("multipart/form-data")) {
+            extractMultipartField(request.bodyString(), contentType, name)
+        } else {
+            extractUrlEncodedField(request.bodyString(), name)
+        }
+    }
+
+    private fun extractUrlEncodedField(body: String, name: String): String? =
+        body.split("&")
             .mapNotNull { param ->
                 val eq = param.indexOf('=')
                 if (eq < 0) null
@@ -39,6 +47,21 @@ object CsrfToken {
                 }
             }
             .firstOrNull()
+
+    private fun extractMultipartField(body: String, contentType: String, name: String): String? {
+        val boundary = contentType.substringAfter("boundary=", "").trim()
+        if (boundary.isEmpty()) return null
+        return body.split("--$boundary")
+            .drop(1)
+            .firstOrNull { part ->
+                part.contains("""name="$name"""")
+            }
+            ?.let { part ->
+                val sep = "\r\n\r\n"
+                val idx = part.indexOf(sep)
+                if (idx == -1) null
+                else part.substring(idx + sep.length).trimEnd('\r', '\n', '-')
+            }
     }
 
     private fun constantTimeEquals(a: String, b: String): Boolean {

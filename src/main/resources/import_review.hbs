@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Review Import - Splitwise</title>
+    <link rel="stylesheet" href="/public/styles.css">
+</head>
+<body>
+    <nav>
+        <a href="/">Home</a> |
+        <a href="/group/{{groupId}}">Back to group</a> |
+        <a href="/group/{{groupId}}/import">Re-upload</a>
+    </nav>
+    <main>
+        <h1>Review Import</h1>
+        <p>Assign a payer for each row, then confirm to create the expenses. All expenses will be split equally among all group members.</p>
+
+        <form method="post" action="/group/{{groupId}}/import/confirm">
+            <input type="hidden" name="_csrf" value="{{csrfToken}}">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Description</th>
+                        <th>Amount</th>
+                        <th>Paid by</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each rows}}
+                    <tr>
+                        <td>{{date}}</td>
+                        <td>{{description}}</td>
+                        <td>{{amount}}</td>
+                        <td>
+                            <select name="payer_{{rowIndex}}" required>
+                                {{#each ../members}}
+                                <option value="{{id}}">{{username}}</option>
+                                {{/each}}
+                            </select>
+                        </td>
+                    </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+            <button type="submit">Confirm and create expenses</button>
+        </form>
+    </main>
+</body>
+</html>

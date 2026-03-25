@@ -2,6 +2,7 @@ package com.splitwise.persistence
 
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.Table
+import org.jetbrains.exposed.sql.javatime.date
 import org.jetbrains.exposed.sql.javatime.timestampWithTimeZone
 
 object UsersTable : Table("users") {
@@ -56,6 +57,18 @@ object SettlementsTable : Table("settlements") {
     val toUserId = long("to_user_id").references(UsersTable.id, onDelete = ReferenceOption.RESTRICT)
     val amount = decimal("amount", 10, 2)
     val recordedAt = timestampWithTimeZone("recorded_at")
+
+    override val primaryKey = PrimaryKey(id)
+}
+
+object CsvImportRowsTable : Table("csv_import_rows") {
+    val id = long("id").autoIncrement()
+    val importId = uuid("import_id")
+    val rowIndex = integer("row_index")
+    val date = date("date")
+    val description = text("description")
+    val amount = decimal("amount", 10, 2)
+    val payerId = long("payer_id").references(UsersTable.id, onDelete = ReferenceOption.SET_NULL).nullable()
 
     override val primaryKey = PrimaryKey(id)
 }

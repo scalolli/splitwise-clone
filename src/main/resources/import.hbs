@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Import Transactions - Splitwise</title>
+    <link rel="stylesheet" href="/public/styles.css">
+</head>
+<body>
+    <nav>
+        <a href="/">Home</a> |
+        <a href="/group/{{groupId}}">Back to group</a>
+    </nav>
+    <main>
+        <h1>Import Transactions</h1>
+        <p>Upload a CSV file in the format: <code>date,description,amount</code> (e.g. <code>2026-03-01,Dinner,42.50</code>). No header row.</p>
+
+        {{#if errors}}
+        <ul class="errors">
+            {{#each errors}}
+            <li>{{this}}</li>
+            {{/each}}
+        </ul>
+        {{/if}}
+
+        <form method="post" action="/group/{{groupId}}/import" enctype="multipart/form-data">
+            <input type="hidden" name="_csrf" value="{{csrfToken}}">
+            <div>
+                <label for="csv_file">CSV file</label>
+                <input type="file" id="csv_file" name="csv_file" accept=".csv,text/csv" required>
+            </div>
+            <button type="submit">Upload and preview</button>
+        </form>
+    </main>
+</body>
+</html>

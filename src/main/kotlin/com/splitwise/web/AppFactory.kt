@@ -1,9 +1,11 @@
 package com.splitwise.web
 
+import com.splitwise.persistence.CsvImportRepository
 import com.splitwise.persistence.ExpenseRepository
 import com.splitwise.persistence.GroupRepository
 import com.splitwise.persistence.SettlementRepository
 import com.splitwise.persistence.UserRepository
+import com.splitwise.service.ExpenseService
 import com.splitwise.service.UserService
 import org.http4k.core.Body
 import org.http4k.core.ContentType
@@ -69,6 +71,8 @@ fun buildApp(
     sessionSecret: String = "dev-secret-change-in-production!!",
 ): HttpHandler {
     val userService = UserService(userRepository)
+    val expenseService = ExpenseService(expenseRepository)
+    val csvImportRepository = CsvImportRepository(expenseRepository.database)
     val sessionToken = SessionToken(sessionSecret)
     val sessionFilter = SessionFilter.protect(sessionToken)
 
@@ -84,6 +88,7 @@ fun buildApp(
                             mainHandler(groupRepository, sessionToken),
                             groupHandler(groupRepository, userRepository, expenseRepository, settlementRepository, sessionToken),
                             expenseHandler(groupRepository, userRepository, expenseRepository, sessionToken),
+                            csvImportHandler(groupRepository, userRepository, csvImportRepository, expenseService, sessionToken),
                         )
                     ),
                 )

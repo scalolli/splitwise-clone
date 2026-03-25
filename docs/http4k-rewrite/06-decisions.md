@@ -349,3 +349,59 @@ not a product feature. The home page should likewise avoid revealing unrelated g
 - Any authenticated user can view any group: rejected due to privacy and authorization risk.
 - Home page shows all groups for discovery: rejected because group existence is itself
   sensitive data in this product.
+
+---
+
+## ADR-019 — CSV import uses a canonical format defined by us
+
+**Status:** Locked
+
+**Decision:** The CSV import feature accepts a single canonical format:
+`date,description,amount` where date is ISO 8601 (`YYYY-MM-DD`), description is free text,
+and amount is a positive decimal number (e.g. `2026-03-01,Dinner,42.50`). No header row
+is expected. Users convert their own bank exports (HSBC, Monzo, etc.) to this format
+offline — for example using Claude — before uploading.
+
+**Rationale:** Supporting every bank's export format would require fragile per-bank parsers
+that break with every format change. A canonical format keeps parsing trivial, puts
+conversion complexity outside the app boundary, and makes the feature bank-agnostic.
+
+**Rejected alternatives:**
+- Per-bank parsers: brittle, maintenance burden, never complete.
+- User-defined column mapping UI: adds significant complexity for marginal gain.
+
+---
+
+## ADR-020 — CSV import staging rows stored in a DB table keyed by import session UUID
+
+**Status:** Locked
+
+**Decision:** After parsing a CSV upload, each row is stored in a `csv_import_rows` table.
+The rows are keyed by a UUID `import_id` which is written to a short-lived cookie
+(`import_session`). The review page reads rows by `import_id`. After batch creation (or
+expiry) the staging rows are deleted. Staging rows older than 24 hours may be purged.
+
+**Rationale:** Cookie-based storage would hit size limits for large imports. Server-side
+session storage is ruled out by ADR-006. A DB staging table has no size limit, survives
+page refreshes, and fits cleanly into the existing persistence model.
+
+**Rejected alternatives:**
+- Signed cookie holding all rows: limited to ~4 KB; breaks on medium-sized imports.
+- Re-uploading the file at confirm step: poor UX; forces double upload.
+
+---
+
+## ADR-021 — CSV import v1 splits expenses equally among all group members
+
+**Status:** Locked
+
+**Decision:** In v1, every imported expense is split equally among all current group
+members, exactly like the default behaviour of the manual add-expense form. Per-row split
+customisation is deferred.
+
+**Rationale:** Equal splitting covers the most common household/trip use case. Adding
+per-row split UI to the review page would make SLICE-CSV2 significantly more complex with
+limited immediate benefit.
+
+**Rejected alternatives:**
+- Per-row payer + custom splits on review page: deferred to a future slice.

@@ -18,7 +18,7 @@ import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
 
-class ExpenseRepository(private val database: Database) {
+class ExpenseRepository(val database: Database) {
 
     fun create(
         groupId: GroupId,

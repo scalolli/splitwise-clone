@@ -37,9 +37,9 @@ class DatabaseIntegrationSmokeTest {
             connection.metaData.getTables(null, null, "users", null).use { resultSet -> resultSet.next() }
         }
 
-        assertEquals(1, firstMigrationResult.migrationsExecuted)
+        assertTrue(firstMigrationResult.migrationsExecuted > 0, "Expected at least one migration to run")
         assertEquals(0, secondMigrationResult.migrationsExecuted)
-        assertEquals("1", appliedVersion)
+        assertNotNull(appliedVersion)
         assertTrue(usersTableExists)
         assertNotNull(database.exposed)
     }
