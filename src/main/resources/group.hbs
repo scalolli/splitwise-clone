@@ -33,28 +33,36 @@
 
         <h2>Expenses</h2>
         {{#if expenses}}
-        <table>
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Description</th>
-                    <th>Amount</th>
-                    <th>Paid by</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                {{#each expenses}}
-                <tr>
-                    <td>{{incurredAt}}</td>
-                    <td>{{description}}</td>
-                    <td>{{amount}}</td>
-                    <td>{{payer}}</td>
-                    <td><a href="/expenses/{{id}}/edit">Edit</a></td>
-                </tr>
-                {{/each}}
-            </tbody>
-        </table>
+        <form method="post" action="/group/{{groupId}}/expenses/delete">
+            <input type="hidden" name="_csrf" value="{{csrfToken}}">
+            <table>
+                <thead>
+                    <tr>
+                        {{#if isOwner}}<th></th>{{/if}}
+                        <th>Date</th>
+                        <th>Description</th>
+                        <th>Amount</th>
+                        <th>Paid by</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each expenses}}
+                    <tr>
+                        {{#if ../isOwner}}<td><input type="checkbox" name="expense_id" value="{{id}}"></td>{{/if}}
+                        <td>{{incurredAt}}</td>
+                        <td>{{description}}</td>
+                        <td>{{amount}}</td>
+                        <td>{{payer}}</td>
+                        <td><a href="/expenses/{{id}}/edit">Edit</a></td>
+                    </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+            {{#if isOwner}}
+            <button type="submit">Delete selected</button>
+            {{/if}}
+        </form>
         {{else}}
         <p class="muted">No expenses yet. <a href="/group/{{groupId}}/add_expense">Add one</a>.</p>
         {{/if}}

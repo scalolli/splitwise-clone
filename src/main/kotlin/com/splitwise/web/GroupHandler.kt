@@ -39,6 +39,7 @@ data class GroupViewModel(
     val settlements: List<Map<String, Any?>> = emptyList(),
     val settlementErrors: List<String> = emptyList(),
     val csrfToken: String = "",
+    val isOwner: Boolean = false,
 ) : ViewModel {
     override fun template() = "group"
 }
@@ -295,8 +296,28 @@ fun groupHandler(
                         balances = balances,
                         settlements = settlements,
                         csrfToken = nonce,
+                        isOwner = (group.creatorId == currentUserId),
                     )
                 )
+        },
+
+        "/group/{id}/expenses/delete" bind POST to { request ->
+            val currentUserId = request.sessionUserId(sessionToken)
+                ?: return@to Response(Status.FOUND).header("Location", "/login")
+            val idParam = request.path("id")?.toLongOrNull()
+                ?: return@to Response(Status.NOT_FOUND)
+
+            val group = groupRepository.findById(GroupId(idParam))
+                ?: return@to Response(Status.NOT_FOUND)
+
+            if (group.creatorId != currentUserId) return@to Response(Status.FORBIDDEN)
+
+            val params = parseFormBody(request.bodyString())
+            val ids = params["expense_id"]?.mapNotNull { it.toLongOrNull() } ?: emptyList()
+
+            expenseRepository.deleteByIds(ids, group.id)
+
+            Response(Status.FOUND).header("Location", "/group/$idParam")
         },
 
         "/group/{id}/settle" bind POST to { request ->

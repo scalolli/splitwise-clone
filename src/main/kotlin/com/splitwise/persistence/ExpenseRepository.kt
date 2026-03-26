@@ -11,6 +11,7 @@ import java.time.OffsetDateTime
 import java.time.ZoneOffset
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
+import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.batchInsert
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
@@ -131,6 +132,20 @@ class ExpenseRepository(val database: Database) {
         transaction(database.exposed) {
             // shares cascade-delete via FK
             ExpensesTable.deleteWhere { ExpensesTable.id eq id.value }
+        }
+    }
+
+    /**
+     * Deletes all expenses whose IDs are in [ids] AND whose groupId matches [groupId].
+     * The groupId check prevents cross-group deletions.
+     * Shares cascade-delete via FK.
+     */
+    fun deleteByIds(ids: List<Long>, groupId: GroupId) {
+        if (ids.isEmpty()) return
+        transaction(database.exposed) {
+            ExpensesTable.deleteWhere {
+                (ExpensesTable.id inList ids) and (ExpensesTable.groupId eq groupId.value)
+            }
         }
     }
 
