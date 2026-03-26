@@ -48,15 +48,6 @@
                 </select>
             </label>
 
-            <h3 style="margin-top: 1.25rem; margin-bottom: 0.5rem;">Splits</h3>
-            {{#each members}}
-            <label>
-                <span>{{username}}</span>
-                <input type="hidden" name="split_user_id" value="{{id}}">
-                <input type="text" name="split_amount" value="{{shareAmount}}" placeholder="0.00">
-            </label>
-            {{/each}}
-
             <button type="submit">Save Changes</button>
         </form>
 

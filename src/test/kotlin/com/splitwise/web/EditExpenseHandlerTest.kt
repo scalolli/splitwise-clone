@@ -127,8 +127,6 @@ class EditExpenseHandlerTest {
                     "description" to "Updated Expense",
                     "amount" to "50.00",
                     "payer_id" to alice.id.value.toString(),
-                    "split_user_id" to alice.id.value.toString(),
-                    "split_amount" to "50.00",
                     "_csrf" to csrfForm,
                 ))
         )
@@ -158,8 +156,6 @@ class EditExpenseHandlerTest {
                     "description" to "Hacked",
                     "amount" to "50.00",
                     "payer_id" to alice.id.value.toString(),
-                    "split_user_id" to alice.id.value.toString(),
-                    "split_amount" to "50.00",
                     "_csrf" to csrfForm,
                 ))
         )
@@ -181,8 +177,6 @@ class EditExpenseHandlerTest {
                     "description" to "",  // invalid: empty
                     "amount" to "50.00",
                     "payer_id" to alice.id.value.toString(),
-                    "split_user_id" to alice.id.value.toString(),
-                    "split_amount" to "50.00",
                     "_csrf" to csrfForm,
                 ))
         )
@@ -279,17 +273,6 @@ class EditExpenseHandlerTest {
             "Expected delete form action on edit expense page")
     }
 
-    @Test
-    fun `GET edit expense pre-populates existing split amounts`() {
-        val alice = userRepository.findByUsername("alice")!!
-        val response = app(Request(GET, "/expenses/${expenseId.value}/edit").cookie("session", payerSession))
-
-        assertEquals(200, response.status.code)
-        // The expense was created with alice owning 60.00 — that should appear in the form
-        assertTrue(response.bodyString().contains("60.00"),
-            "Expected existing split amount 60.00 to be pre-populated in edit form")
-    }
-
     // --- Date field ---
 
     @Test
@@ -315,8 +298,6 @@ class EditExpenseHandlerTest {
                     "description" to "Updated Expense",
                     "amount" to "60.00",
                     "payer_id" to alice.id.value.toString(),
-                    "split_user_id" to alice.id.value.toString(),
-                    "split_amount" to "60.00",
                     "incurred_at" to "2023-03-10",
                     "_csrf" to csrfForm,
                 ))
@@ -325,5 +306,32 @@ class EditExpenseHandlerTest {
         val updated = expenseRepository.findById(expenseId)!!
         val savedDate = updated.incurredAt.atZone(ZoneOffset.UTC).toLocalDate()
         assertEquals(LocalDate.of(2023, 3, 10), savedDate)
+    }
+
+    @Test
+    fun `POST edit expense recalculates equal split among all members on save`() {
+        val alice = userRepository.findByUsername("alice")!!
+        // carol is already a member (added in setUp), so group has bob (creator), alice, carol = 3 members
+        val (csrfCookie, csrfForm) = TestHelpers.getCsrfToken(app, "/expenses/${expenseId.value}/edit", payerSession)
+
+        app(
+            Request(POST, "/expenses/${expenseId.value}/edit")
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .cookie("session", payerSession)
+                .cookie(Cookie("csrf", csrfCookie))
+                .body(TestHelpers.formBody(
+                    "description" to "Updated Dinner",
+                    "amount" to "90.00",
+                    "payer_id" to alice.id.value.toString(),
+                    "_csrf" to csrfForm,
+                ))
+        )
+
+        val updated = expenseRepository.findById(expenseId)!!
+        assertEquals(3, updated.shares.size, "Expected one share per group member")
+        updated.shares.forEach { share ->
+            assertEquals("30.00", share.amount.value.toPlainString(),
+                "Expected equal split of 30.00 for user ${share.userId}")
+        }
     }
 }

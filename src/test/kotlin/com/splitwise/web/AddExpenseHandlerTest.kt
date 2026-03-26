@@ -97,8 +97,6 @@ class AddExpenseHandlerTest {
             "description" to "Lunch",
             "amount" to "30.00",
             "payer_id" to alice.id.value.toString(),
-            "split_user_id" to alice.id.value.toString(),
-            "split_amount" to "30.00",
             "_csrf" to csrfFormValue,
         )
 
@@ -131,8 +129,6 @@ class AddExpenseHandlerTest {
             "description" to "Coffee",
             "amount" to "10.00",
             "payer_id" to alice.id.value.toString(),
-            "split_user_id" to alice.id.value.toString(),
-            "split_amount" to "10.00",
             "_csrf" to csrfFormValue,
         )
 
@@ -172,8 +168,6 @@ class AddExpenseHandlerTest {
                     "description" to "Hack",
                     "amount" to "10.00",
                     "payer_id" to bob.id.value.toString(),
-                    "split_user_id" to bob.id.value.toString(),
-                    "split_amount" to "10.00",
                     "_csrf" to csrf2FormValue,
                 ))
         )
@@ -199,8 +193,6 @@ class AddExpenseHandlerTest {
                     "description" to "",
                     "amount" to "30.00",
                     "payer_id" to alice.id.value.toString(),
-                    "split_user_id" to alice.id.value.toString(),
-                    "split_amount" to "30.00",
                     "_csrf" to csrfFormValue,
                 ))
         )
@@ -225,8 +217,6 @@ class AddExpenseHandlerTest {
                     "description" to "Lunch",
                     "amount" to "0.00",
                     "payer_id" to alice.id.value.toString(),
-                    "split_user_id" to alice.id.value.toString(),
-                    "split_amount" to "0.00",
                     "_csrf" to csrfFormValue,
                 ))
         )
@@ -239,7 +229,6 @@ class AddExpenseHandlerTest {
     fun `POST add expense with payer not in group returns 400 with error`() {
         val nonMemberSession = TestHelpers.registerAndLogin(app, "carol", "carol@example.com")
         val carol = userRepository.findByUsername("carol")!!
-        val alice = userRepository.findByUsername("alice")!!
         val (csrfCookieValue, csrfFormValue) = TestHelpers.getCsrfToken(
             app, "/group/${groupId.value}/add_expense", aliceSession
         )
@@ -253,99 +242,12 @@ class AddExpenseHandlerTest {
                     "description" to "Lunch",
                     "amount" to "30.00",
                     "payer_id" to carol.id.value.toString(), // carol is not a member
-                    "split_user_id" to alice.id.value.toString(),
-                    "split_amount" to "30.00",
                     "_csrf" to csrfFormValue,
                 ))
         )
 
         assertEquals(400, response.status.code)
         assertTrue(response.bodyString().contains("Payer is not a member of this group"))
-    }
-
-    @Test
-    fun `POST add expense with split user not in group returns 400 with error`() {
-        val nonMemberSession = TestHelpers.registerAndLogin(app, "dan", "dan@example.com")
-        val dan = userRepository.findByUsername("dan")!!
-        val alice = userRepository.findByUsername("alice")!!
-        val (csrfCookieValue, csrfFormValue) = TestHelpers.getCsrfToken(
-            app, "/group/${groupId.value}/add_expense", aliceSession
-        )
-
-        val response = app(
-            Request(POST, "/group/${groupId.value}/add_expense")
-                .header("Content-Type", "application/x-www-form-urlencoded")
-                .cookie("session", aliceSession)
-                .cookie(Cookie("csrf", csrfCookieValue))
-                .body(TestHelpers.formBody(
-                    "description" to "Lunch",
-                    "amount" to "30.00",
-                    "payer_id" to alice.id.value.toString(),
-                    "split_user_id" to dan.id.value.toString(), // dan is not a member
-                    "split_amount" to "30.00",
-                    "_csrf" to csrfFormValue,
-                ))
-        )
-
-        assertEquals(400, response.status.code)
-        assertTrue(response.bodyString().contains("Split user is not a member of this group"))
-    }
-
-    @Test
-    fun `POST add expense where payer not in splits returns 400 with error`() {
-        val alice = userRepository.findByUsername("alice")!!
-        val bobSession = TestHelpers.registerAndLogin(app, "eve", "eve@example.com")
-        val eve = userRepository.findByUsername("eve")!!
-        groupRepository.addMember(groupId, eve.id)
-
-        val (csrfCookieValue, csrfFormValue) = TestHelpers.getCsrfToken(
-            app, "/group/${groupId.value}/add_expense", aliceSession
-        )
-
-        // Alice is payer but only eve is in splits
-        val response = app(
-            Request(POST, "/group/${groupId.value}/add_expense")
-                .header("Content-Type", "application/x-www-form-urlencoded")
-                .cookie("session", aliceSession)
-                .cookie(Cookie("csrf", csrfCookieValue))
-                .body(TestHelpers.formBody(
-                    "description" to "Lunch",
-                    "amount" to "30.00",
-                    "payer_id" to alice.id.value.toString(),
-                    "split_user_id" to eve.id.value.toString(),
-                    "split_amount" to "30.00",
-                    "_csrf" to csrfFormValue,
-                ))
-        )
-
-        assertEquals(400, response.status.code)
-        assertTrue(response.bodyString().contains("The payer must be included in the expense splits"))
-    }
-
-    @Test
-    fun `POST add expense where split sum does not equal total returns 400 with error`() {
-        val alice = userRepository.findByUsername("alice")!!
-        val (csrfCookieValue, csrfFormValue) = TestHelpers.getCsrfToken(
-            app, "/group/${groupId.value}/add_expense", aliceSession
-        )
-
-        val response = app(
-            Request(POST, "/group/${groupId.value}/add_expense")
-                .header("Content-Type", "application/x-www-form-urlencoded")
-                .cookie("session", aliceSession)
-                .cookie(Cookie("csrf", csrfCookieValue))
-                .body(TestHelpers.formBody(
-                    "description" to "Lunch",
-                    "amount" to "30.00",
-                    "payer_id" to alice.id.value.toString(),
-                    "split_user_id" to alice.id.value.toString(),
-                    "split_amount" to "20.00", // wrong: should be 30.00
-                    "_csrf" to csrfFormValue,
-                ))
-        )
-
-        assertEquals(400, response.status.code)
-        assertTrue(response.bodyString().contains("The sum of all splits must equal the total amount"))
     }
 
     @Test
@@ -376,8 +278,6 @@ class AddExpenseHandlerTest {
                     "description" to "Old dinner",
                     "amount" to "20.00",
                     "payer_id" to alice.id.value.toString(),
-                    "split_user_id" to alice.id.value.toString(),
-                    "split_amount" to "20.00",
                     "incurred_at" to "2024-06-15",
                     "_csrf" to csrfFormValue,
                 ))
@@ -405,8 +305,6 @@ class AddExpenseHandlerTest {
                     "description" to "Coffee",
                     "amount" to "5.00",
                     "payer_id" to alice.id.value.toString(),
-                    "split_user_id" to alice.id.value.toString(),
-                    "split_amount" to "5.00",
                     "_csrf" to csrfFormValue,
                 ))
         )
@@ -416,5 +314,39 @@ class AddExpenseHandlerTest {
         val today = java.time.LocalDate.now()
         val savedDate = expenses[0].incurredAt.atZone(java.time.ZoneOffset.UTC).toLocalDate()
         assertEquals(today, savedDate)
+    }
+
+    @Test
+    fun `POST add expense splits equally among all group members`() {
+        val alice = userRepository.findByUsername("alice")!!
+        val bobSession = TestHelpers.registerAndLogin(app, "bob", "bob@example.com")
+        val bob = userRepository.findByUsername("bob")!!
+        groupRepository.addMember(groupId, bob.id)
+
+        val (csrfCookieValue, csrfFormValue) = TestHelpers.getCsrfToken(
+            app, "/group/${groupId.value}/add_expense", aliceSession
+        )
+
+        app(
+            Request(POST, "/group/${groupId.value}/add_expense")
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .cookie("session", aliceSession)
+                .cookie(Cookie("csrf", csrfCookieValue))
+                .body(TestHelpers.formBody(
+                    "description" to "Dinner",
+                    "amount" to "30.00",
+                    "payer_id" to alice.id.value.toString(),
+                    "_csrf" to csrfFormValue,
+                ))
+        )
+
+        val expenses = expenseRepository.findByGroup(groupId)
+        assertEquals(1, expenses.size)
+        val shares = expenses[0].shares
+        assertEquals(2, shares.size, "Expected one share per member")
+        shares.forEach { share ->
+            assertEquals("15.00", share.amount.value.toPlainString(),
+                "Expected equal split of 15.00 for user ${share.userId}")
+        }
     }
 }

@@ -10,6 +10,8 @@ import com.splitwise.persistence.GroupRepository
 import com.splitwise.persistence.UserRepository
 import com.splitwise.service.ExpenseService
 import com.splitwise.service.ValidationException
+import java.math.BigDecimal
+import java.math.RoundingMode
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import org.http4k.core.Body
@@ -124,19 +126,14 @@ fun expenseHandler(
             val description = params["description"]?.firstOrNull()?.trim() ?: ""
             val amountRaw = params["amount"]?.firstOrNull()?.trim() ?: "0"
             val payerIdRaw = params["payer_id"]?.firstOrNull()?.trim() ?: ""
-            val splitUserIds = params["split_user_id"] ?: emptyList()
-            val splitAmounts = params["split_amount"] ?: emptyList()
             val incurredAtRaw = params["incurred_at"]?.firstOrNull()?.trim() ?: ""
             val incurredAt = runCatching { LocalDate.parse(incurredAtRaw, dateFormatter) }
                 .getOrElse { LocalDate.now() }
 
             val amount = runCatching { Money(amountRaw) }.getOrElse { Money("0.00") }
             val payerId = payerIdRaw.toLongOrNull()?.let { UserId(it) } ?: UserId(0)
-            val splits = splitUserIds.zip(splitAmounts).mapNotNull { (uid, amt) ->
-                val userId = uid.toLongOrNull() ?: return@mapNotNull null
-                val shareAmount = runCatching { Money(amt) }.getOrNull() ?: return@mapNotNull null
-                ExpenseShare(UserId(userId), shareAmount)
-            }
+            val splitAmount = amount.value.divide(BigDecimal(group.memberIds.size), 2, RoundingMode.HALF_UP)
+            val splits = group.memberIds.map { uid -> ExpenseShare(uid, Money(splitAmount)) }
 
             val members = group.memberIds.mapNotNull { uid ->
                 val user = userRepository.findById(uid) ?: return@mapNotNull null
@@ -232,19 +229,14 @@ fun expenseHandler(
             val description = params["description"]?.firstOrNull()?.trim() ?: ""
             val amountRaw = params["amount"]?.firstOrNull()?.trim() ?: "0"
             val payerIdRaw = params["payer_id"]?.firstOrNull()?.trim() ?: ""
-            val splitUserIds = params["split_user_id"] ?: emptyList()
-            val splitAmounts = params["split_amount"] ?: emptyList()
             val incurredAtRaw = params["incurred_at"]?.firstOrNull()?.trim() ?: ""
             val incurredAt = runCatching { LocalDate.parse(incurredAtRaw, dateFormatter) }
                 .getOrElse { LocalDate.now() }
 
             val amount = runCatching { Money(amountRaw) }.getOrElse { Money("0.00") }
             val payerId = payerIdRaw.toLongOrNull()?.let { UserId(it) } ?: UserId(0)
-            val splits = splitUserIds.zip(splitAmounts).mapNotNull { (uid, amt) ->
-                val userId = uid.toLongOrNull() ?: return@mapNotNull null
-                val shareAmount = runCatching { Money(amt) }.getOrNull() ?: return@mapNotNull null
-                ExpenseShare(UserId(userId), shareAmount)
-            }
+            val splitAmount = amount.value.divide(BigDecimal(group.memberIds.size), 2, RoundingMode.HALF_UP)
+            val splits = group.memberIds.map { uid -> ExpenseShare(uid, Money(splitAmount)) }
 
             val members = group.memberIds.mapNotNull { uid ->
                 val user = userRepository.findById(uid) ?: return@mapNotNull null
