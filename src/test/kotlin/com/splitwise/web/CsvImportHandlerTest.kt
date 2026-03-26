@@ -198,6 +198,68 @@ class CsvImportHandlerTest {
     }
 
     @Test
+    fun `POST confirm skips rows where excluded_N is true`() {
+        val csv = "2026-01-01,Dinner,42.50\n2026-01-02,Taxi,15.00\n"
+        val (csrfCookie1, csrfField1) = TestHelpers.getCsrfToken(app, "/group/$groupId/import", session)
+        val uploadResponse = postCsv(csv, csrfCookie1, csrfField1)
+        val importCookie = uploadResponse.cookies().first { it.name == "import_session" }.value
+
+        val alice = userRepository.findByUsername("alice")!!
+        val (csrfCookie2, csrfField2) = TestHelpers.getCsrfToken(app, "/group/$groupId/import", session)
+        app(
+            Request(POST, "/group/$groupId/import/confirm")
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .cookie("session", session)
+                .cookie("import_session", importCookie)
+                .cookie(Cookie("csrf", csrfCookie2))
+                .body(TestHelpers.formBody(
+                    "payer_0" to alice.id.value.toString(),
+                    "payer_1" to alice.id.value.toString(),
+                    "excluded_0" to "true",   // exclude first row (Dinner)
+                    "_csrf" to csrfField2,
+                ))
+        )
+
+        val expenses = expenseRepository.findByGroup(com.splitwise.domain.GroupId(groupId))
+        assertEquals(1, expenses.size, "Expected only 1 expense (excluded row skipped)")
+        assertTrue(expenses.any { it.description == "Taxi" }, "Expected Taxi to be created")
+        assertFalse(expenses.any { it.description == "Dinner" }, "Expected Dinner to be excluded")
+    }
+
+    @Test
+    fun `POST confirm uses overridden date and description from form params`() {
+        val csv = "2026-01-01,Dinner,42.50\n"
+        val (csrfCookie1, csrfField1) = TestHelpers.getCsrfToken(app, "/group/$groupId/import", session)
+        val uploadResponse = postCsv(csv, csrfCookie1, csrfField1)
+        val importCookie = uploadResponse.cookies().first { it.name == "import_session" }.value
+
+        val alice = userRepository.findByUsername("alice")!!
+        val (csrfCookie2, csrfField2) = TestHelpers.getCsrfToken(app, "/group/$groupId/import", session)
+        app(
+            Request(POST, "/group/$groupId/import/confirm")
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .cookie("session", session)
+                .cookie("import_session", importCookie)
+                .cookie(Cookie("csrf", csrfCookie2))
+                .body(TestHelpers.formBody(
+                    "payer_0" to alice.id.value.toString(),
+                    "date_0" to "2026-03-15",
+                    "description_0" to "Fancy Dinner Override",
+                    "_csrf" to csrfField2,
+                ))
+        )
+
+        val expenses = expenseRepository.findByGroup(com.splitwise.domain.GroupId(groupId))
+        assertEquals(1, expenses.size)
+        val expense = expenses.first()
+        assertEquals("Fancy Dinner Override", expense.description)
+        assertEquals(
+            java.time.LocalDate.of(2026, 3, 15),
+            expense.incurredAt.atZone(java.time.ZoneOffset.UTC).toLocalDate()
+        )
+    }
+
+    @Test
     fun `POST confirm deletes staging rows after creating expenses`() {
         val csv = "2026-01-01,Lunch,20.00\n"
         val (csrfCookie1, csrfField1) = TestHelpers.getCsrfToken(app, "/group/$groupId/import", session)

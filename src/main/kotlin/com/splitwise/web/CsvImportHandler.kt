@@ -191,6 +191,9 @@ fun csvImportHandler(
             val memberIds = group.memberIds
 
             stagedRows.forEach { row ->
+                val isExcluded = params["excluded_${row.rowIndex}"]?.firstOrNull() == "true"
+                if (isExcluded) return@forEach
+
                 val payerIdValue = params["payer_${row.rowIndex}"]?.firstOrNull()?.toLongOrNull()
                     ?: currentUserId.value
                 val payerId = UserId(payerIdValue)
@@ -199,14 +202,22 @@ fun csvImportHandler(
                     .divide(BigDecimal(memberIds.size), 2, RoundingMode.HALF_UP)
                 val shares = memberIds.map { uid -> ExpenseShare(uid, Money(splitAmount)) }
 
+                val overrideDate = params["date_${row.rowIndex}"]?.firstOrNull()?.let {
+                    runCatching { java.time.LocalDate.parse(it) }.getOrNull()
+                } ?: row.date
+
+                val overrideDescription = params["description_${row.rowIndex}"]
+                    ?.firstOrNull()?.trim()?.takeIf { it.isNotEmpty() }
+                    ?: row.description
+
                 expenseService.addExpense(
                     groupId = GroupId(idParam),
-                    description = row.description,
+                    description = overrideDescription,
                     amount = totalAmount,
                     payerId = payerId,
                     splits = shares,
                     memberIds = memberIds,
-                    incurredAt = row.date,
+                    incurredAt = overrideDate,
                 )
             }
 

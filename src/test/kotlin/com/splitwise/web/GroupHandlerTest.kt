@@ -162,6 +162,19 @@ class GroupHandlerTest {
     }
 
     @Test
+    fun `GET group contains link to import CSV`() {
+        val session = registerAndLogin("nav_import", "nav_import@example.com")
+        val user = userRepository.findByUsername("nav_import")!!
+        val group = groupRepository.create("Import Nav Group", null, user.id)
+
+        val response = app(Request(GET, "/group/${group.id.value}").cookie("session", session))
+
+        assertEquals(200, response.status.code)
+        assertTrue(response.bodyString().contains("""href="/group/${group.id.value}/import""""),
+            "Expected link to CSV import on group page")
+    }
+
+    @Test
     fun `GET group expense table shows incurred date`() {
         val session = registerAndLogin("date_user", "date_user@example.com")
         val user = userRepository.findByUsername("date_user")!!

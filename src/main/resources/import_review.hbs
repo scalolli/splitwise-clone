@@ -14,9 +14,9 @@
     </nav>
     <main>
         <h1>Review Import</h1>
-        <p>Assign a payer for each row, then confirm to create the expenses. All expenses will be split equally among all group members.</p>
+        <p>Check each row before confirming. You can edit the date or description, and remove any row you don't want to import. All expenses will be split equally among all group members.</p>
 
-        <form method="post" action="/group/{{groupId}}/import/confirm">
+        <form method="post" action="/group/{{groupId}}/import/confirm" id="confirm-form">
             <input type="hidden" name="_csrf" value="{{csrfToken}}">
             <table>
                 <thead>
@@ -25,13 +25,19 @@
                         <th>Description</th>
                         <th>Amount</th>
                         <th>Paid by</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
                     {{#each rows}}
-                    <tr>
-                        <td>{{date}}</td>
-                        <td>{{description}}</td>
+                    <tr id="row-{{rowIndex}}">
+                        <td>
+                            <input type="hidden" name="excluded_{{rowIndex}}" value="false" id="excluded_{{rowIndex}}">
+                            <input type="date" name="date_{{rowIndex}}" value="{{date}}" required>
+                        </td>
+                        <td>
+                            <input type="text" name="description_{{rowIndex}}" value="{{description}}" required>
+                        </td>
                         <td>{{amount}}</td>
                         <td>
                             <select name="payer_{{rowIndex}}" required>
@@ -40,6 +46,9 @@
                                 {{/each}}
                             </select>
                         </td>
+                        <td>
+                            <button type="button" onclick="removeRow({{rowIndex}})">Remove</button>
+                        </td>
                     </tr>
                     {{/each}}
                 </tbody>
@@ -47,5 +56,15 @@
             <button type="submit">Confirm and create expenses</button>
         </form>
     </main>
+    <script>
+        function removeRow(index) {
+            var row = document.getElementById('row-' + index);
+            var excluded = document.getElementById('excluded_' + index);
+            if (row && excluded) {
+                row.style.display = 'none';
+                excluded.value = 'true';
+            }
+        }
+    </script>
 </body>
 </html>
