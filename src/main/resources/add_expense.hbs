@@ -27,7 +27,7 @@
         {{/if}}
 
         <div class="card">
-            <form method="post" action="/group/{{groupId}}/add_expense">
+            <form method="post" action="/group/{{groupId}}/add_expense" id="expense-form">
                 <input type="hidden" name="_csrf" value="{{csrfToken}}">
 
                 <label><span>Description</span>
@@ -35,7 +35,7 @@
                 </label>
 
                 <label><span>Amount</span>
-                    <input type="text" name="amount" value="{{amount}}" required placeholder="0.00">
+                    <input type="text" name="amount" id="amount" value="{{amount}}" required placeholder="0.00">
                 </label>
 
                 <label><span>Date</span>
@@ -50,6 +50,47 @@
                     </select>
                 </label>
 
+                <label><span>Split</span>
+                    <select name="split_mode" id="split-mode">
+                        <option value="equal"{{#if splitModeEqual}} selected{{/if}}>Equal — split evenly</option>
+                        <option value="percent"{{#if splitModePercent}} selected{{/if}}>Percentage — enter % per person</option>
+                        <option value="parts"{{#if splitModeParts}} selected{{/if}}>Parts — enter shares per person</option>
+                    </select>
+                </label>
+
+                <div id="split-rows" class="split-rows" style="display:none;">
+                    <div class="split-rows-header">
+                        <span>Member</span>
+                        <span id="split-col-label">Value</span>
+                        <span class="split-preview-label">Preview</span>
+                    </div>
+                    {{#each members}}
+                    <div class="split-row">
+                        <span class="split-member">{{username}}</span>
+                        <input type="number" class="split-input"
+                               id="split-percent-{{id}}"
+                               name="split_percent_{{id}}"
+                               value="{{splitPercent}}"
+                               min="0" step="any"
+                               data-uid="{{id}}"
+                               data-mode="percent">
+                        <input type="number" class="split-input"
+                               id="split-parts-{{id}}"
+                               name="split_parts_{{id}}"
+                               value="{{splitParts}}"
+                               min="0" step="any"
+                               data-uid="{{id}}"
+                               data-mode="parts">
+                        <span class="split-preview" id="preview-{{id}}">—</span>
+                    </div>
+                    {{/each}}
+                    <div class="split-total-row">
+                        <span></span>
+                        <span id="split-total-label" class="split-total-hint"></span>
+                        <span></span>
+                    </div>
+                </div>
+
                 <div class="btn-row">
                     <button type="submit">Add Expense</button>
                     <a href="/group/{{groupId}}" class="btn btn-ghost">Cancel</a>
@@ -57,5 +98,70 @@
             </form>
         </div>
     </div>
+
+    <script>
+    (function () {
+        var modeSelect = document.getElementById('split-mode');
+        var splitRows  = document.getElementById('split-rows');
+        var amountInput = document.getElementById('amount');
+        var colLabel   = document.getElementById('split-col-label');
+        var totalLabel = document.getElementById('split-total-label');
+
+        var inputs = {
+            percent: Array.from(document.querySelectorAll('input[data-mode="percent"]')),
+            parts:   Array.from(document.querySelectorAll('input[data-mode="parts"]')),
+        };
+
+        function currentMode() { return modeSelect.value; }
+        function totalAmount() { return parseFloat(amountInput.value) || 0; }
+
+        function showInputsFor(mode) {
+            inputs.percent.forEach(function(el) { el.style.display = mode === 'percent' ? '' : 'none'; });
+            inputs.parts.forEach(function(el)   { el.style.display = mode === 'parts'   ? '' : 'none'; });
+        }
+
+        function updatePreviews() {
+            var mode   = currentMode();
+            var amount = totalAmount();
+
+            if (mode === 'equal') {
+                splitRows.style.display = 'none';
+                return;
+            }
+            splitRows.style.display = '';
+            showInputsFor(mode);
+
+            if (mode === 'percent') {
+                colLabel.textContent = '%';
+                var vals = inputs.percent.map(function(el) { return parseFloat(el.value) || 0; });
+                var total = vals.reduce(function(a,b){return a+b;}, 0);
+                totalLabel.textContent = 'Total: ' + total.toFixed(2) + '% ' + (Math.abs(total - 100) < 0.01 ? '✓' : '(must be 100)');
+                inputs.percent.forEach(function(el, i) {
+                    var uid = el.dataset.uid;
+                    var share = total > 0 ? amount * (vals[i] / total) : 0;
+                    document.getElementById('preview-' + uid).textContent = share.toFixed(2);
+                });
+            } else if (mode === 'parts') {
+                colLabel.textContent = 'Parts';
+                var vals = inputs.parts.map(function(el) { return parseFloat(el.value) || 0; });
+                var total = vals.reduce(function(a,b){return a+b;}, 0);
+                totalLabel.textContent = 'Total parts: ' + total;
+                inputs.parts.forEach(function(el, i) {
+                    var uid = el.dataset.uid;
+                    var share = total > 0 ? amount * (vals[i] / total) : 0;
+                    document.getElementById('preview-' + uid).textContent = share.toFixed(2);
+                });
+            }
+        }
+
+        modeSelect.addEventListener('change', updatePreviews);
+        amountInput.addEventListener('input', updatePreviews);
+        inputs.percent.forEach(function(el) { el.addEventListener('input', updatePreviews); });
+        inputs.parts.forEach(function(el)   { el.addEventListener('input', updatePreviews); });
+
+        // Initialise on page load
+        updatePreviews();
+    })();
+    </script>
 </body>
 </html>

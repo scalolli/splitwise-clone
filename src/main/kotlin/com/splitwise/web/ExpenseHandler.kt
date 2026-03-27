@@ -32,6 +32,88 @@ import org.http4k.template.HandlebarsTemplates
 import org.http4k.template.ViewModel
 import org.http4k.template.viewModel
 
+private fun calculateSplits(
+    mode: String,
+    memberIds: List<UserId>,
+    amount: Money,
+    params: Map<String, List<String>>,
+): List<ExpenseShare> {
+    return when (mode) {
+        "percent" -> {
+            val percents = memberIds.map { uid ->
+                val raw = params["split_percent_${uid.value}"]?.firstOrNull()?.trim()?.toDoubleOrNull() ?: 0.0
+                uid to raw
+            }
+            val total = percents.sumOf { it.second }
+            if (total <= 0.0) return equalSplits(memberIds, amount)
+            val shares = percents.map { (uid, pct) ->
+                val share = amount.value.multiply(BigDecimal(pct / total)).setScale(2, RoundingMode.HALF_UP)
+                uid to share
+            }
+            pennyAdjust(shares, amount)
+        }
+        "parts" -> {
+            val parts = memberIds.map { uid ->
+                val raw = params["split_parts_${uid.value}"]?.firstOrNull()?.trim()?.toDoubleOrNull() ?: 1.0
+                uid to raw.coerceAtLeast(0.0)
+            }
+            val total = parts.sumOf { it.second }
+            if (total <= 0.0) return equalSplits(memberIds, amount)
+            val shares = parts.map { (uid, p) ->
+                val share = amount.value.multiply(BigDecimal(p / total)).setScale(2, RoundingMode.HALF_UP)
+                uid to share
+            }
+            pennyAdjust(shares, amount)
+        }
+        else -> equalSplits(memberIds, amount)
+    }
+}
+
+private fun equalSplits(memberIds: List<UserId>, amount: Money): List<ExpenseShare> {
+    val n = memberIds.size
+    val baseShare = amount.value.divide(BigDecimal(n), 2, RoundingMode.HALF_UP)
+    val shares = memberIds.map { uid -> uid to baseShare }
+    return pennyAdjust(shares, amount)
+}
+
+private fun pennyAdjust(shares: List<Pair<UserId, BigDecimal>>, amount: Money): List<ExpenseShare> {
+    val allocated = shares.fold(BigDecimal.ZERO) { acc, (_, v) -> acc + v }
+    val diff = amount.value.subtract(allocated)
+    return shares.mapIndexed { i, (uid, v) ->
+        val adjusted = if (i == shares.lastIndex) v.add(diff) else v
+        ExpenseShare(uid, Money.from(adjusted))
+    }
+}
+
+private fun splitModeFlags(mode: String) = Triple(mode == "equal", mode == "percent", mode == "parts")
+
+private fun membersWithSplitValues(
+    memberIds: List<UserId>,
+    userRepository: com.splitwise.persistence.UserRepository,
+    mode: String,
+    params: Map<String, List<String>>,
+    existingSplits: List<ExpenseShare> = emptyList(),
+    selectedPayerId: UserId? = null,
+): List<Map<String, Any?>> {
+    val n = memberIds.size
+    return memberIds.mapNotNull { uid ->
+        val user = userRepository.findById(uid) ?: return@mapNotNull null
+        val existingShare = existingSplits.find { it.userId == uid }
+        val sharePercent = params["split_percent_${uid.value}"]?.firstOrNull()
+        val shareParts = params["split_parts_${uid.value}"]?.firstOrNull()
+        mapOf(
+            "id" to uid.value,
+            "username" to user.username,
+            "selected" to (selectedPayerId == uid),
+            "splitPercent" to (sharePercent ?: (100.0 / n).let {
+                if (it == it.toLong().toDouble()) it.toLong().toString() else String.format("%.2f", it)
+            }),
+            "splitParts" to (shareParts ?: "1"),
+            "shareAmount" to (existingShare?.amount?.value?.toPlainString() ?: ""),
+        )
+    }
+}
+
 data class AddExpenseViewModel(
     val groupId: Long,
     val members: List<Map<String, Any?>>,
@@ -40,6 +122,10 @@ data class AddExpenseViewModel(
     val amount: String = "",
     val incurredAt: String = "",
     val csrfToken: String = "",
+    val splitMode: String = "equal",
+    val splitModeEqual: Boolean = true,
+    val splitModePercent: Boolean = false,
+    val splitModeParts: Boolean = false,
 ) : ViewModel {
     override fun template() = "add_expense"
 }
@@ -54,6 +140,10 @@ data class EditExpenseViewModel(
     val incurredAt: String = "",
     val selectedPayerId: Long = 0,
     val csrfToken: String = "",
+    val splitMode: String = "equal",
+    val splitModeEqual: Boolean = true,
+    val splitModePercent: Boolean = false,
+    val splitModeParts: Boolean = false,
 ) : ViewModel {
     override fun template() = "edit_expense"
 }
@@ -93,10 +183,12 @@ fun expenseHandler(
                 return@to Response(Status.FORBIDDEN)
             }
 
-            val members = group.memberIds.mapNotNull { uid ->
-                val user = userRepository.findById(uid) ?: return@mapNotNull null
-                mapOf("id" to uid.value, "username" to user.username)
-            }
+            val members = membersWithSplitValues(
+                memberIds = group.memberIds,
+                userRepository = userRepository,
+                mode = "equal",
+                params = emptyMap(),
+            )
 
             val nonce = CsrfToken.generate()
             Response(Status.OK)
@@ -127,18 +219,22 @@ fun expenseHandler(
             val amountRaw = params["amount"]?.firstOrNull()?.trim() ?: "0"
             val payerIdRaw = params["payer_id"]?.firstOrNull()?.trim() ?: ""
             val incurredAtRaw = params["incurred_at"]?.firstOrNull()?.trim() ?: ""
+            val splitMode = params["split_mode"]?.firstOrNull()?.trim() ?: "equal"
             val incurredAt = runCatching { LocalDate.parse(incurredAtRaw, dateFormatter) }
                 .getOrElse { LocalDate.now() }
 
             val amount = runCatching { Money(amountRaw) }.getOrElse { Money("0.00") }
             val payerId = payerIdRaw.toLongOrNull()?.let { UserId(it) } ?: UserId(0)
-            val splitAmount = amount.value.divide(BigDecimal(group.memberIds.size), 2, RoundingMode.HALF_UP)
-            val splits = group.memberIds.map { uid -> ExpenseShare(uid, Money(splitAmount)) }
+            val splits = calculateSplits(splitMode, group.memberIds, amount, params)
 
-            val members = group.memberIds.mapNotNull { uid ->
-                val user = userRepository.findById(uid) ?: return@mapNotNull null
-                mapOf("id" to uid.value, "username" to user.username)
-            }
+            val (modeEqual, modePercent, modeParts) = splitModeFlags(splitMode)
+            val members = membersWithSplitValues(
+                memberIds = group.memberIds,
+                userRepository = userRepository,
+                mode = splitMode,
+                params = params,
+                selectedPayerId = payerId,
+            )
 
             val result = expenseService.addExpense(
                 groupId = group.id,
@@ -170,6 +266,10 @@ fun expenseHandler(
                             amount = amountRaw,
                             incurredAt = incurredAtRaw,
                             csrfToken = nonce,
+                            splitMode = splitMode,
+                            splitModeEqual = modeEqual,
+                            splitModePercent = modePercent,
+                            splitModeParts = modeParts,
                         ))
                 }
             )
@@ -190,11 +290,14 @@ fun expenseHandler(
             val isAuthorised = currentUserId == expense.payerId || currentUserId == group.creatorId
             if (!isAuthorised) return@to Response(Status.FORBIDDEN)
 
-            val members = group.memberIds.mapNotNull { uid ->
-                val user = userRepository.findById(uid) ?: return@mapNotNull null
-                val shareAmount = expense.shares.find { it.userId == uid }?.amount?.value?.toPlainString() ?: "0.00"
-                mapOf("id" to uid.value, "username" to user.username, "shareAmount" to shareAmount)
-            }
+            val members = membersWithSplitValues(
+                memberIds = group.memberIds,
+                userRepository = userRepository,
+                mode = "equal",
+                params = emptyMap(),
+                existingSplits = expense.shares,
+                selectedPayerId = expense.payerId,
+            )
 
             val nonce = CsrfToken.generate()
             Response(Status.OK)
@@ -231,18 +334,22 @@ fun expenseHandler(
             val amountRaw = params["amount"]?.firstOrNull()?.trim() ?: "0"
             val payerIdRaw = params["payer_id"]?.firstOrNull()?.trim() ?: ""
             val incurredAtRaw = params["incurred_at"]?.firstOrNull()?.trim() ?: ""
+            val splitMode = params["split_mode"]?.firstOrNull()?.trim() ?: "equal"
             val incurredAt = runCatching { LocalDate.parse(incurredAtRaw, dateFormatter) }
                 .getOrElse { LocalDate.now() }
 
             val amount = runCatching { Money(amountRaw) }.getOrElse { Money("0.00") }
             val payerId = payerIdRaw.toLongOrNull()?.let { UserId(it) } ?: UserId(0)
-            val splitAmount = amount.value.divide(BigDecimal(group.memberIds.size), 2, RoundingMode.HALF_UP)
-            val splits = group.memberIds.map { uid -> ExpenseShare(uid, Money(splitAmount)) }
+            val splits = calculateSplits(splitMode, group.memberIds, amount, params)
 
-            val members = group.memberIds.mapNotNull { uid ->
-                val user = userRepository.findById(uid) ?: return@mapNotNull null
-                mapOf("id" to uid.value, "username" to user.username)
-            }
+            val (modeEqual, modePercent, modeParts) = splitModeFlags(splitMode)
+            val members = membersWithSplitValues(
+                memberIds = group.memberIds,
+                userRepository = userRepository,
+                mode = splitMode,
+                params = params,
+                selectedPayerId = payerId,
+            )
 
             val result = expenseService.editExpense(
                 id = ExpenseId(expenseIdParam),
@@ -276,6 +383,10 @@ fun expenseHandler(
                             incurredAt = incurredAtRaw,
                             selectedPayerId = payerId.value,
                             csrfToken = nonce,
+                            splitMode = splitMode,
+                            splitModeEqual = modeEqual,
+                            splitModePercent = modePercent,
+                            splitModeParts = modeParts,
                         ))
                 }
             )
