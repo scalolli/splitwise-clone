@@ -12,4 +12,9 @@ jobs:
       - name: Ping app
         env:
           APP_URL: ${{ secrets.APP_URL }}
-        run: curl -sf "$APP_URL" > /dev/null
+        run: |
+          if [ -z "$APP_URL" ]; then
+            echo "APP_URL secret is not set, skipping ping"
+            exit 0
+          fi
+          curl -sf "$APP_URL" > /dev/null
