@@ -8,11 +8,12 @@
 </head>
 <body>
     <nav>
-        <a href="/">Splitwise</a>
+        <a href="/" class="brand">Splitwise</a>
         <a href="/group/{{groupId}}">Back to Group</a>
-        <form method="post" action="/logout" style="display:inline">
+        <span class="spacer"></span>
+        <form method="post" action="/logout">
             <input type="hidden" name="_csrf" value="{{csrfToken}}">
-            <button type="submit">Logout</button>
+            <button type="submit" class="nav-logout">Logout</button>
         </form>
     </nav>
 
@@ -25,38 +26,45 @@
         </ul>
         {{/if}}
 
-        <form method="post" action="/expenses/{{expenseId}}/edit">
-            <input type="hidden" name="_csrf" value="{{csrfToken}}">
+        <div class="card">
+            <form method="post" action="/expenses/{{expenseId}}/edit">
+                <input type="hidden" name="_csrf" value="{{csrfToken}}">
 
-            <label><span>Description</span>
-                <input type="text" name="description" value="{{description}}" required>
-            </label>
+                <label><span>Description</span>
+                    <input type="text" name="description" value="{{description}}" required>
+                </label>
 
-            <label><span>Amount</span>
-                <input type="text" name="amount" value="{{amount}}" required placeholder="0.00">
-            </label>
+                <label><span>Amount</span>
+                    <input type="text" name="amount" value="{{amount}}" required placeholder="0.00">
+                </label>
 
-            <label><span>Date</span>
-                <input type="date" name="incurred_at" value="{{incurredAt}}">
-            </label>
+                <label><span>Date</span>
+                    <input type="date" name="incurred_at" value="{{incurredAt}}">
+                </label>
 
-            <label><span>Paid by</span>
-                <select name="payer_id">
-                    {{#each members}}
-                    <option value="{{id}}">{{username}}</option>
-                    {{/each}}
-                </select>
-            </label>
+                <label><span>Paid by</span>
+                    <select name="payer_id">
+                        {{#each members}}
+                        <option value="{{id}}">{{username}}</option>
+                        {{/each}}
+                    </select>
+                </label>
 
-            <button type="submit">Save Changes</button>
-        </form>
+                <div class="btn-row">
+                    <button type="submit">Save Changes</button>
+                    <a href="/group/{{groupId}}" class="btn btn-ghost">Cancel</a>
+                </div>
+            </form>
+        </div>
 
-        <hr style="margin: 2rem 0; border-color: #e0e0e0;">
-
-        <form method="post" action="/expenses/{{expenseId}}/delete" onsubmit="return confirm('Delete this expense?')">
-            <input type="hidden" name="_csrf" value="{{csrfToken}}">
-            <button type="submit" class="destructive">Delete Expense</button>
-        </form>
+        <p class="section-label">Danger Zone</p>
+        <div class="card">
+            <p class="muted" style="margin-bottom: 1rem;">This will permanently delete the expense and cannot be undone.</p>
+            <form method="post" action="/expenses/{{expenseId}}/delete" onsubmit="return confirm('Delete this expense?')">
+                <input type="hidden" name="_csrf" value="{{csrfToken}}">
+                <button type="submit" class="btn-destructive">Delete Expense</button>
+            </form>
+        </div>
     </div>
 </body>
 </html>

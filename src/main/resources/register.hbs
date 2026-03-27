@@ -8,32 +8,36 @@
 </head>
 <body>
     <div class="auth-page">
-        <h1>Create account</h1>
+        <div class="auth-card">
+            <h1>Create account</h1>
 
-        {{#if errors}}
-        <ul class="errors">
-            {{#each errors}}<li>{{this}}</li>{{/each}}
-        </ul>
-        {{/if}}
+            {{#if errors}}
+            <ul class="errors">
+                {{#each errors}}<li>{{this}}</li>{{/each}}
+            </ul>
+            {{/if}}
 
-        <form method="post" action="/register">
-            <input type="hidden" name="_csrf" value="{{csrfToken}}">
-            <label><span>Username</span>
-                <input type="text" name="username" value="{{username}}" autocomplete="username">
-            </label>
-            <label><span>Email</span>
-                <input type="email" name="email" value="{{email}}" autocomplete="email">
-            </label>
-            <label><span>Password</span>
-                <input type="password" name="password" autocomplete="new-password">
-            </label>
-            <label><span>Confirm Password</span>
-                <input type="password" name="confirm_password" autocomplete="new-password">
-            </label>
-            <button type="submit">Create account</button>
-        </form>
+            <form method="post" action="/register">
+                <input type="hidden" name="_csrf" value="{{csrfToken}}">
+                <label><span>Username</span>
+                    <input type="text" name="username" value="{{username}}" autocomplete="username">
+                </label>
+                <label><span>Email</span>
+                    <input type="email" name="email" value="{{email}}" autocomplete="email">
+                </label>
+                <label><span>Password</span>
+                    <input type="password" name="password" autocomplete="new-password">
+                </label>
+                <label><span>Confirm Password</span>
+                    <input type="password" name="confirm_password" autocomplete="new-password">
+                </label>
+                <div class="btn-row">
+                    <button type="submit">Create account</button>
+                </div>
+            </form>
 
-        <p class="mt-2 muted"><a href="/login">Already have an account? Log in</a></p>
+            <p class="auth-footer"><a href="/login">Already have an account? Sign in</a></p>
+        </div>
     </div>
 </body>
 </html>

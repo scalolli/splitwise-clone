@@ -8,11 +8,12 @@
 </head>
 <body>
     <nav>
-        <a href="/">Splitwise</a>
+        <a href="/" class="brand">Splitwise</a>
         <a href="/group/{{groupId}}">Back to Group</a>
-        <form method="post" action="/logout" style="display:inline">
+        <span class="spacer"></span>
+        <form method="post" action="/logout">
             <input type="hidden" name="_csrf" value="{{csrfToken}}">
-            <button type="submit">Logout</button>
+            <button type="submit" class="nav-logout">Logout</button>
         </form>
     </nav>
 
@@ -25,31 +26,36 @@
         </ul>
         {{/if}}
 
-        <form method="post" action="/group/{{groupId}}/add_expense">
-            <input type="hidden" name="_csrf" value="{{csrfToken}}">
+        <div class="card">
+            <form method="post" action="/group/{{groupId}}/add_expense">
+                <input type="hidden" name="_csrf" value="{{csrfToken}}">
 
-            <label><span>Description</span>
-                <input type="text" name="description" value="{{description}}" required>
-            </label>
+                <label><span>Description</span>
+                    <input type="text" name="description" value="{{description}}" required>
+                </label>
 
-            <label><span>Amount</span>
-                <input type="text" name="amount" value="{{amount}}" required placeholder="0.00">
-            </label>
+                <label><span>Amount</span>
+                    <input type="text" name="amount" value="{{amount}}" required placeholder="0.00">
+                </label>
 
-            <label><span>Date</span>
-                <input type="date" name="incurred_at" value="{{incurredAt}}">
-            </label>
+                <label><span>Date</span>
+                    <input type="date" name="incurred_at" value="{{incurredAt}}">
+                </label>
 
-            <label><span>Paid by</span>
-                <select name="payer_id">
-                    {{#each members}}
-                    <option value="{{id}}">{{username}}</option>
-                    {{/each}}
-                </select>
-            </label>
+                <label><span>Paid by</span>
+                    <select name="payer_id">
+                        {{#each members}}
+                        <option value="{{id}}">{{username}}</option>
+                        {{/each}}
+                    </select>
+                </label>
 
-            <button type="submit">Add Expense</button>
-        </form>
+                <div class="btn-row">
+                    <button type="submit">Add Expense</button>
+                    <a href="/group/{{groupId}}" class="btn btn-ghost">Cancel</a>
+                </div>
+            </form>
+        </div>
     </div>
 </body>
 </html>

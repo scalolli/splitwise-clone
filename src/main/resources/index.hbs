@@ -8,25 +8,31 @@
 </head>
 <body>
     <nav>
-        <a href="/">Splitwise</a>
+        <a href="/" class="brand">Splitwise</a>
         <a href="/group/create">New Group</a>
-        <form method="post" action="/logout" style="display:inline">
+        <span class="spacer"></span>
+        <form method="post" action="/logout">
             <input type="hidden" name="_csrf" value="{{csrfToken}}">
-            <button type="submit">Logout</button>
+            <button type="submit" class="nav-logout">Logout</button>
         </form>
     </nav>
 
     <div class="page">
-        <h1>Your Groups</h1>
+        <div class="page-header">
+            <h1>Your Groups</h1>
+            <a href="/group/create" class="btn btn-outline">New Group</a>
+        </div>
 
         {{#if groups}}
-        <ul>
+        <ul class="group-list">
             {{#each groups}}
             <li><a href="/group/{{id}}">{{name}}</a></li>
             {{/each}}
         </ul>
         {{else}}
-        <p class="muted">No groups yet. <a href="/group/create">Create one</a>.</p>
+        <div class="empty-state">
+            <p>No groups yet. <a href="/group/create">Create your first group</a>.</p>
+        </div>
         {{/if}}
     </div>
 </body>

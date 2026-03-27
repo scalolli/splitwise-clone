@@ -8,24 +8,28 @@
 </head>
 <body>
     <div class="auth-page">
-        <h1>Login</h1>
+        <div class="auth-card">
+            <h1>Sign in</h1>
 
-        {{#if error}}
-        <ul class="errors"><li>{{error}}</li></ul>
-        {{/if}}
+            {{#if error}}
+            <ul class="errors"><li>{{error}}</li></ul>
+            {{/if}}
 
-        <form method="post" action="/login">
-            <input type="hidden" name="_csrf" value="{{csrfToken}}">
-            <label><span>Username</span>
-                <input type="text" name="username" value="{{username}}" autocomplete="username">
-            </label>
-            <label><span>Password</span>
-                <input type="password" name="password" autocomplete="current-password">
-            </label>
-            <button type="submit">Login</button>
-        </form>
+            <form method="post" action="/login">
+                <input type="hidden" name="_csrf" value="{{csrfToken}}">
+                <label><span>Username</span>
+                    <input type="text" name="username" value="{{username}}" autocomplete="username">
+                </label>
+                <label><span>Password</span>
+                    <input type="password" name="password" autocomplete="current-password">
+                </label>
+                <div class="btn-row">
+                    <button type="submit">Sign in</button>
+                </div>
+            </form>
 
-        <p class="mt-2 muted"><a href="/register">No account? Register</a></p>
+            <p class="auth-footer"><a href="/register">No account? Register</a></p>
+        </div>
     </div>
 </body>
 </html>

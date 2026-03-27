@@ -8,11 +8,12 @@
 </head>
 <body>
     <nav>
-        <a href="/">Splitwise</a>
+        <a href="/" class="brand">Splitwise</a>
         <a href="/">Home</a>
-        <form method="post" action="/logout" style="display:inline">
+        <span class="spacer"></span>
+        <form method="post" action="/logout">
             <input type="hidden" name="_csrf" value="{{csrfToken}}">
-            <button type="submit">Logout</button>
+            <button type="submit" class="nav-logout">Logout</button>
         </form>
     </nav>
 
@@ -25,13 +26,18 @@
         </ul>
         {{/if}}
 
-        <form method="post" action="/group/create">
-            <input type="hidden" name="_csrf" value="{{csrfToken}}">
-            <label><span>Group Name</span>
-                <input type="text" name="name" value="{{name}}" required>
-            </label>
-            <button type="submit">Create Group</button>
-        </form>
+        <div class="card">
+            <form method="post" action="/group/create">
+                <input type="hidden" name="_csrf" value="{{csrfToken}}">
+                <label><span>Group Name</span>
+                    <input type="text" name="name" value="{{name}}" required>
+                </label>
+                <div class="btn-row">
+                    <button type="submit">Create Group</button>
+                    <a href="/" class="btn btn-ghost">Cancel</a>
+                </div>
+            </form>
+        </div>
     </div>
 </body>
 </html>

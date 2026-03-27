@@ -2,35 +2,46 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Import Transactions - Splitwise</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Import Transactions — Splitwise</title>
     <link rel="stylesheet" href="/public/styles.css">
 </head>
 <body>
     <nav>
-        <a href="/">Home</a> |
-        <a href="/group/{{groupId}}">Back to group</a>
+        <a href="/" class="brand">Splitwise</a>
+        <a href="/group/{{groupId}}">Back to Group</a>
+        <span class="spacer"></span>
+        <form method="post" action="/logout">
+            <input type="hidden" name="_csrf" value="{{csrfToken}}">
+            <button type="submit" class="nav-logout">Logout</button>
+        </form>
     </nav>
-    <main>
+
+    <div class="page">
         <h1>Import Transactions</h1>
-        <p>Upload a CSV file in the format: <code>date,description,amount</code> (e.g. <code>2026-03-01,Dinner,42.50</code>). No header row.</p>
 
         {{#if errors}}
         <ul class="errors">
-            {{#each errors}}
-            <li>{{this}}</li>
-            {{/each}}
+            {{#each errors}}<li>{{this}}</li>{{/each}}
         </ul>
         {{/if}}
 
-        <form method="post" action="/group/{{groupId}}/import" enctype="multipart/form-data">
-            <input type="hidden" name="_csrf" value="{{csrfToken}}">
-            <div>
-                <label for="csv_file">CSV file</label>
-                <input type="file" id="csv_file" name="csv_file" accept=".csv,text/csv" required>
-            </div>
-            <button type="submit">Upload and preview</button>
-        </form>
-    </main>
+        <div class="card">
+            <p class="muted" style="margin-bottom: 1.25rem;">
+                Upload a CSV file in the format: <code>date,description,amount</code><br>
+                Example row: <code>2026-03-01,Dinner,42.50</code>. No header row required.
+            </p>
+            <form method="post" action="/group/{{groupId}}/import" enctype="multipart/form-data">
+                <input type="hidden" name="_csrf" value="{{csrfToken}}">
+                <label><span>CSV file</span>
+                    <input type="file" id="csv_file" name="csv_file" accept=".csv,text/csv" required>
+                </label>
+                <div class="btn-row">
+                    <button type="submit">Upload and preview</button>
+                    <a href="/group/{{groupId}}" class="btn btn-ghost">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
 </body>
 </html>

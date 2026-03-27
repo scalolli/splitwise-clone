@@ -2,60 +2,75 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Review Import - Splitwise</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Review Import — Splitwise</title>
     <link rel="stylesheet" href="/public/styles.css">
 </head>
 <body>
     <nav>
-        <a href="/">Home</a> |
-        <a href="/group/{{groupId}}">Back to group</a> |
+        <a href="/" class="brand">Splitwise</a>
+        <a href="/group/{{groupId}}">Back to Group</a>
         <a href="/group/{{groupId}}/import">Re-upload</a>
+        <span class="spacer"></span>
+        <form method="post" action="/logout">
+            <input type="hidden" name="_csrf" value="{{csrfToken}}">
+            <button type="submit" class="nav-logout">Logout</button>
+        </form>
     </nav>
-    <main>
+
+    <div class="page">
         <h1>Review Import</h1>
-        <p>Check each row before confirming. You can edit the date or description, and remove any row you don't want to import. All expenses will be split equally among all group members.</p>
+        <p class="muted" style="margin-bottom: 1.5rem;">
+            Check each row before confirming. You can edit the date or description, and remove any row you don't want to import.
+            All expenses will be split equally among all group members.
+        </p>
 
         <form method="post" action="/group/{{groupId}}/import/confirm" id="confirm-form">
             <input type="hidden" name="_csrf" value="{{csrfToken}}">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Description</th>
-                        <th>Amount</th>
-                        <th>Paid by</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {{#each rows}}
-                    <tr id="row-{{rowIndex}}">
-                        <td>
-                            <input type="hidden" name="excluded_{{rowIndex}}" value="false" id="excluded_{{rowIndex}}">
-                            <input type="date" name="date_{{rowIndex}}" value="{{date}}" required>
-                        </td>
-                        <td>
-                            <input type="text" name="description_{{rowIndex}}" value="{{description}}" required>
-                        </td>
-                        <td>{{amount}}</td>
-                        <td>
-                            <select name="payer_{{rowIndex}}" required>
-                                {{#each ../members}}
-                                <option value="{{id}}">{{username}}</option>
-                                {{/each}}
-                            </select>
-                        </td>
-                        <td>
-                            <button type="button" onclick="removeRow({{rowIndex}})">Remove</button>
-                        </td>
-                    </tr>
-                    {{/each}}
-                </tbody>
-            </table>
-            <button type="submit">Confirm and create expenses</button>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Description</th>
+                            <th>Amount</th>
+                            <th>Paid by</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{#each rows}}
+                        <tr id="row-{{rowIndex}}">
+                            <td>
+                                <input type="hidden" name="excluded_{{rowIndex}}" value="false" id="excluded_{{rowIndex}}">
+                                <input type="date" name="date_{{rowIndex}}" value="{{date}}" required>
+                            </td>
+                            <td>
+                                <input type="text" name="description_{{rowIndex}}" value="{{description}}" required>
+                            </td>
+                            <td><strong>{{amount}}</strong></td>
+                            <td>
+                                <select name="payer_{{rowIndex}}" required>
+                                    {{#each ../members}}
+                                    <option value="{{id}}">{{username}}</option>
+                                    {{/each}}
+                                </select>
+                            </td>
+                            <td>
+                                <button type="button" class="btn btn-ghost" style="padding: 0.25rem 0.6rem; font-size: 0.8rem;" onclick="removeRow({{rowIndex}})">Remove</button>
+                            </td>
+                        </tr>
+                        {{/each}}
+                    </tbody>
+                </table>
+            </div>
+            <div class="btn-row">
+                <button type="submit">Confirm and import</button>
+                <a href="/group/{{groupId}}/import" class="btn btn-ghost">Re-upload</a>
+            </div>
         </form>
-    </main>
+    </div>
+
     <script>
         function removeRow(index) {
             var row = document.getElementById('row-' + index);
