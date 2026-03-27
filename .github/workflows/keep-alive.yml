@@ -10,4 +10,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Ping app
-        run: curl -sf ${{ secrets.APP_URL }} > /dev/null
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+        run: curl -sf "$APP_URL" > /dev/null
