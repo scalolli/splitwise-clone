@@ -32,6 +32,13 @@
                 <label><span>Group Name</span>
                     <input type="text" name="name" value="{{name}}" required>
                 </label>
+                <label><span>Currency</span>
+                    <select name="currency">
+                        {{#each currencyOptions}}
+                        <option value="{{value}}"{{#if selected}} selected{{/if}}>{{label}}</option>
+                        {{/each}}
+                    </select>
+                </label>
                 <div class="btn-row">
                     <button type="submit">Create Group</button>
                     <a href="/" class="btn btn-ghost">Cancel</a>

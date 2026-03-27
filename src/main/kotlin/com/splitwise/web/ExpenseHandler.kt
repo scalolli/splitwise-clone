@@ -148,6 +148,7 @@ fun expenseHandler(
                 splits = splits,
                 memberIds = group.memberIds,
                 incurredAt = incurredAt,
+                currencySymbol = currencySymbol(group.currency),
             )
 
             result.fold(
@@ -251,6 +252,7 @@ fun expenseHandler(
                 splits = splits,
                 memberIds = group.memberIds,
                 incurredAt = incurredAt,
+                currencySymbol = currencySymbol(group.currency),
             )
 
             result.fold(

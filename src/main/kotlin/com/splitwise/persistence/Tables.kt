@@ -20,6 +20,7 @@ object GroupsTable : Table("groups") {
     val description = text("description").nullable()
     val creatorId = long("creator_id").references(UsersTable.id, onDelete = ReferenceOption.RESTRICT)
     val createdAt = timestampWithTimeZone("created_at")
+    val currency = varchar("currency", 3).default("GBP")
 
     override val primaryKey = PrimaryKey(id)
 }

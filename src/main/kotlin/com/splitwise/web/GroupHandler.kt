@@ -33,6 +33,7 @@ import org.http4k.template.viewModel
 data class GroupViewModel(
     val groupId: Long,
     val groupName: String,
+    val groupCurrency: String,
     val members: List<Map<String, Any?>>,
     val expenses: List<Map<String, Any?>>,
     val balances: List<Map<String, Any?>>,
@@ -47,9 +48,23 @@ data class GroupViewModel(
 data class CreateGroupViewModel(
     val errors: List<String> = emptyList(),
     val name: String = "",
+    val currency: String = "GBP",
     val csrfToken: String = "",
 ) : ViewModel {
     override fun template() = "create_group"
+
+    val currencyOptions: List<Map<String, Any?>> = listOf(
+        "GBP" to "GBP — British Pound (£)",
+        "USD" to "USD — US Dollar ($)",
+        "EUR" to "EUR — Euro (€)",
+        "JPY" to "JPY — Japanese Yen (¥)",
+        "AUD" to "AUD — Australian Dollar (A$)",
+        "CAD" to "CAD — Canadian Dollar (C$)",
+        "CHF" to "CHF — Swiss Franc (Fr)",
+        "INR" to "INR — Indian Rupee (₹)",
+    ).map { (code, label) ->
+        mapOf("value" to code, "label" to label, "selected" to (code == currency))
+    }
 }
 
 data class EditGroupViewModel(
@@ -82,6 +97,7 @@ private fun csrfCookie(nonce: String) = Cookie(
     sameSite = SameSite.Strict,
 )
 
+
 fun groupHandler(
     groupRepository: GroupRepository,
     userRepository: UserRepository,
@@ -112,6 +128,7 @@ fun groupHandler(
 
             val params = parseFormBody(request.bodyString())
             val name = params["name"]?.firstOrNull()?.trim() ?: ""
+            val currency = params["currency"]?.firstOrNull()?.trim()?.uppercase() ?: "GBP"
 
             if (name.isEmpty()) {
                 val nonce = CsrfToken.generate()
@@ -120,11 +137,12 @@ fun groupHandler(
                     .with(htmlLens of CreateGroupViewModel(
                         errors = listOf("Group name is required"),
                         name = name,
+                        currency = currency,
                         csrfToken = nonce,
                     ))
             }
 
-            val group = groupService.createGroup(name = name, creatorId = currentUserId)
+            val group = groupService.createGroup(name = name, creatorId = currentUserId, currency = currency)
             Response(Status.FOUND)
                 .header("Location", "/group/${group.id.value}")
                 .cookie(flashCookie("Group created successfully"))
@@ -257,7 +275,7 @@ fun groupHandler(
                 mapOf(
                     "id" to expense.id.value,
                     "description" to expense.description,
-                    "amount" to expense.amount.value.toPlainString(),
+                    "amount" to formatMoney(expense.amount.value, group.currency),
                     "payer" to payerName,
                     "incurredAt" to incurredDate,
                 )
@@ -269,7 +287,7 @@ fun groupHandler(
                 mapOf(
                     "debtor" to debtorName,
                     "creditor" to creditorName,
-                    "amount" to balance.amount.value.toPlainString(),
+                    "amount" to formatMoney(balance.amount.value, group.currency),
                 )
             }
 
@@ -280,7 +298,7 @@ fun groupHandler(
                 mapOf(
                     "from" to fromName,
                     "to" to toName,
-                    "amount" to s.amount.value.toPlainString(),
+                    "amount" to formatMoney(s.amount.value, group.currency),
                 )
             }
 
@@ -291,6 +309,7 @@ fun groupHandler(
                     htmlLens of GroupViewModel(
                         groupId = group.id.value,
                         groupName = group.name,
+                        groupCurrency = group.currency,
                         members = members,
                         expenses = expenses,
                         balances = balances,
@@ -344,20 +363,20 @@ fun groupHandler(
                     val payerName = userMap[expense.payerId]?.username ?: expense.payerId.value.toString()
                     val incurredDate = expense.incurredAt.atZone(ZoneOffset.UTC).toLocalDate().format(dateFormatter)
                     mapOf("id" to expense.id.value, "description" to expense.description,
-                          "amount" to expense.amount.value.toPlainString(), "payer" to payerName,
+                          "amount" to formatMoney(expense.amount.value, group.currency), "payer" to payerName,
                           "incurredAt" to incurredDate)
                 }
                 val balances = balanceService.balancesForGroup(group.id).map { balance ->
                     val debtorName = userMap[balance.debtorId]?.username ?: balance.debtorId.value.toString()
                     val creditorName = userMap[balance.creditorId]?.username ?: balance.creditorId.value.toString()
                     mapOf("debtor" to debtorName, "creditor" to creditorName,
-                          "amount" to balance.amount.value.toPlainString())
+                          "amount" to formatMoney(balance.amount.value, group.currency))
                 }
                 val allUserMap = buildAllUserMap(userRepository)
                 val settlements = settlementService.forGroup(group.id).map { s ->
                     val fromName = allUserMap[s.fromUserId] ?: s.fromUserId.value.toString()
                     val toName = allUserMap[s.toUserId] ?: s.toUserId.value.toString()
-                    mapOf("from" to fromName, "to" to toName, "amount" to s.amount.value.toPlainString())
+                    mapOf("from" to fromName, "to" to toName, "amount" to formatMoney(s.amount.value, group.currency))
                 }
                 val nonce = CsrfToken.generate()
                 return Response(Status.BAD_REQUEST)
@@ -365,6 +384,7 @@ fun groupHandler(
                     .with(htmlLens of GroupViewModel(
                         groupId = group.id.value,
                         groupName = group.name,
+                        groupCurrency = group.currency,
                         members = members,
                         expenses = expenses,
                         balances = balances,

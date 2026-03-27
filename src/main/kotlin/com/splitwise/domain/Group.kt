@@ -9,4 +9,5 @@ data class Group(
     val creatorId: UserId,
     val memberIds: List<UserId>,
     val createdAt: Instant,
+    val currency: String = "GBP",
 )

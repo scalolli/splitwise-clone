@@ -17,6 +17,7 @@ object ExpenseValidator {
         payerId: UserId,
         splits: List<ExpenseShare>,
         memberIds: List<UserId>,
+        currencySymbol: String = "£",
     ): ValidationResult {
         val errors = buildList {
             if (description.isBlank()) {
@@ -45,12 +46,11 @@ object ExpenseValidator {
 
             val splitTotal = splits.fold(BigDecimal.ZERO) { total, split -> total + split.amount.value }
             if (splitTotal.subtract(amount.value).abs() > tolerance) {
-                add("The sum of all splits must equal the total amount. Current total: ${formatCurrency(splitTotal)}")
+                add("The sum of all splits must equal the total amount. Current total: ${currencySymbol}${splitTotal.toPlainString()}")
             }
         }
 
         return if (errors.isEmpty()) ValidationResult.Valid else ValidationResult.Invalid(errors)
     }
 
-    private fun formatCurrency(amount: BigDecimal): String = "\u00A3${amount.toPlainString()}"
 }

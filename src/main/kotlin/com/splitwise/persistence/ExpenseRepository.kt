@@ -9,6 +9,7 @@ import com.splitwise.domain.UserId
 import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
+import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.and
@@ -76,7 +77,10 @@ class ExpenseRepository(val database: Database) {
 
     fun findByGroup(groupId: GroupId): List<Expense> =
         transaction(database.exposed) {
-            val rows = ExpensesTable.selectAll().where(ExpensesTable.groupId eq groupId.value).toList()
+            val rows = ExpensesTable.selectAll()
+                .where(ExpensesTable.groupId eq groupId.value)
+                .orderBy(ExpensesTable.incurredAt, SortOrder.DESC)
+                .toList()
             val expenseIds = rows.map { it[ExpensesTable.id] }.toSet()
 
             val allShares = ExpenseSharesTable.selectAll()

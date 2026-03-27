@@ -25,6 +25,7 @@ class ExpenseService(private val expenseRepository: ExpenseRepository) {
         splits: List<ExpenseShare>,
         memberIds: List<UserId>,
         incurredAt: LocalDate = LocalDate.now(),
+        currencySymbol: String = "£",
     ): Result<Expense> {
         val validation = ExpenseValidator.validate(
             description = description,
@@ -32,6 +33,7 @@ class ExpenseService(private val expenseRepository: ExpenseRepository) {
             payerId = payerId,
             splits = splits,
             memberIds = memberIds,
+            currencySymbol = currencySymbol,
         )
 
         if (validation is ValidationResult.Invalid) {
@@ -57,6 +59,7 @@ class ExpenseService(private val expenseRepository: ExpenseRepository) {
         splits: List<ExpenseShare>,
         memberIds: List<UserId>,
         incurredAt: LocalDate = LocalDate.now(),
+        currencySymbol: String = "£",
     ): Result<Unit> {
         val validation = ExpenseValidator.validate(
             description = description,
@@ -64,6 +67,7 @@ class ExpenseService(private val expenseRepository: ExpenseRepository) {
             payerId = payerId,
             splits = splits,
             memberIds = memberIds,
+            currencySymbol = currencySymbol,
         )
 
         if (validation is ValidationResult.Invalid) {

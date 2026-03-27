@@ -11,8 +11,8 @@ class GroupService(
     private val userRepository: UserRepository,
 ) {
 
-    fun createGroup(name: String, creatorId: UserId): Group =
-        groupRepository.create(name = name, description = null, creatorId = creatorId)
+    fun createGroup(name: String, creatorId: UserId, currency: String = "GBP"): Group =
+        groupRepository.create(name = name, description = null, creatorId = creatorId, currency = currency)
 
     fun editGroup(id: GroupId, name: String, requesterId: UserId): Result<Group> {
         val group = groupRepository.findById(id)

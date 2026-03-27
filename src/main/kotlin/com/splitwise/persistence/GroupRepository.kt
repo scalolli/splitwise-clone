@@ -5,19 +5,19 @@ import com.splitwise.domain.GroupId
 import com.splitwise.domain.UserId
 import java.time.OffsetDateTime
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.deleteWhere
+import org.jetbrains.exposed.sql.innerJoin
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.insertIgnore
-import org.jetbrains.exposed.sql.innerJoin
 import org.jetbrains.exposed.sql.selectAll
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
 
 class GroupRepository(private val database: Database) {
 
-    fun create(name: String, description: String?, creatorId: UserId): Group =
+    fun create(name: String, description: String?, creatorId: UserId, currency: String = "GBP"): Group =
         transaction(database.exposed) {
             val now = OffsetDateTime.now()
             val groupId = GroupsTable.insert {
@@ -25,6 +25,7 @@ class GroupRepository(private val database: Database) {
                 it[GroupsTable.description] = description
                 it[GroupsTable.creatorId] = creatorId.value
                 it[GroupsTable.createdAt] = now
+                it[GroupsTable.currency] = currency
             } get GroupsTable.id
 
             GroupMembersTable.insert {
@@ -39,6 +40,7 @@ class GroupRepository(private val database: Database) {
                 creatorId = creatorId,
                 memberIds = listOf(creatorId),
                 createdAt = now.toInstant(),
+                currency = currency,
             )
         }
 
@@ -58,6 +60,7 @@ class GroupRepository(private val database: Database) {
                 creatorId = UserId(row[GroupsTable.creatorId]),
                 memberIds = memberIds,
                 createdAt = row[GroupsTable.createdAt].toInstant(),
+                currency = row[GroupsTable.currency],
             )
         }
 
@@ -79,6 +82,7 @@ class GroupRepository(private val database: Database) {
                     creatorId = UserId(row[GroupsTable.creatorId]),
                     memberIds = memberIds,
                     createdAt = row[GroupsTable.createdAt].toInstant(),
+                    currency = row[GroupsTable.currency],
                 )
             }
         }
@@ -113,6 +117,7 @@ class GroupRepository(private val database: Database) {
                     creatorId = UserId(row[GroupsTable.creatorId]),
                     memberIds = memberIds,
                     createdAt = row[GroupsTable.createdAt].toInstant(),
+                    currency = row[GroupsTable.currency],
                 )
             }
         }
